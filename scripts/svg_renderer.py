@@ -2311,7 +2311,7 @@ _RENDER_JS = r"""
   for (const spec of doc.finish.glow_rects) {
     const [x0, y0, x1, y1] = spec.box;
     finish.appendChild(el("rect", {
-      x: x0, y: y0, width: x1 - x0, height: y1 - y0, rx: 18,
+      x: x0, y: y0, width: x1 - x0, height: y1 - y0, rx: 16,
       fill: "none", stroke: rgba(spec.color, 70 / 255), "stroke-width": spec.width,
       filter: "url(#glow)",
     }));

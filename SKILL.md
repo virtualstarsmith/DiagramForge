@@ -24,7 +24,21 @@ python -X utf8 scripts/doctor.py
 
 Bundled fonts, icons, and rough.js keep the main visual system portable. Chromium, ffmpeg, and rare CJK fallback fonts remain environment dependencies.
 
+**First diagram in a project?** The default is business-formal (`report`-family look, outline icons, no watermark). Before rendering the first diagram for a new project, check for a `.diagramforge` marker (`theme: <slug>` → a saved brand theme) and, if none exists and the context is a branded product/site, ask once: proceed with a bundled style, opt into `sketch`, or onboard the brand first (`scripts/onboard_brand.py`, see `references/branding.md`). Do not ask again on subsequent diagrams in that project.
+
 ## 2. Pick a layout
+
+**Behavior first when behavior is the point.** Before the layout table, check these semantic triggers — they pick the layout that can carry the behavior, not just the shape:
+
+| Behavioral trigger | Route |
+| --- | --- |
+| Fan-in queue depth, bottleneck, finite capacity, retries | `graph` with `kind: "loop"` edges (dashed return channels) |
+| Trust boundaries, permitted/forbidden ingress paths | `panorama` with zoned panels, or `deployment` zones |
+| Two policy/rule evaluations that need pass/fail comparison | `sequence` with `alt` combined fragments |
+| Controls or governance grouped by enforcement layer | `swimlane` bands (hierarchical grays, external sinks deepest) |
+| Staged explanation that must build up step by step | any layout + `chapter` animation preset |
+
+If no trigger matches, go straight to the layout table.
 
 | Layout | Use it for | Capacity |
 | --- | --- | --- |
@@ -79,6 +93,8 @@ Decision rule:
 - Reporting lines → `orgchart`; brainstorming/topic maps → `mindmap` (Mermaid `mindmap` imports); milestones on a line → `timeline` (Mermaid `timeline` imports); root-cause analysis → `fishbone`
 
 ## 3. Write and validate the spec
+
+**Confirm before drawing.** Unless the request already pins layout, style, and content exactly, state the plan in one short message first — chosen layout (and semantic route if triggered), style, canvas preset, and anything the capacity budgets will force out — then proceed when the user confirms or the request is unambiguous.
 
 Start from `assets/default-spec.json` or a file under `assets/examples/`. The complete field reference is `references/spec-format.md`.
 

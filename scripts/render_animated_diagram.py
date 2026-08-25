@@ -709,7 +709,7 @@ def draw_text(ex, draw, text, x, y, w, h, size, color=None, align="center", hand
     draw.multiline_text((tx, ty), text, font=font, fill=hex_rgba(color), spacing=c(spacing), align=align)
 
 
-def draw_rect(ex, draw, x, y, w, h, stroke, fill=None, width=2, radius=10, style="solid"):
+def draw_rect(ex, draw, x, y, w, h, stroke, fill=None, width=2, radius=RADIUS_MD, style="solid"):
     ops_record({"op": "rect", "x": x, "y": y, "w": w, "h": h, "stroke": stroke, "fill": fill,
                 "width": width, "radius": radius, "style": style})
     ex.rect(x, y, w, h, stroke, fill or "transparent", width, style)
@@ -1484,7 +1484,7 @@ def small_input(ex, draw, x, y, item, plain=False):
 
 def core_card(ex, draw, x, y, card, w=260):
     # Text boxes scale with the card; ratios reproduce the legacy w=260 offsets.
-    draw_rect(ex, draw, x, y, w, 90, THEME["core_stroke"], THEME["blue_fill"], 2, 9)
+    draw_rect(ex, draw, x, y, w, 90, THEME["core_stroke"], THEME["blue_fill"], 2, RADIUS_MD)
     hero = card.get("icon_size") == "hero" or card.get("icon_style") == "hero"
     icon(ex, draw, card.get("icon", "file"), x + (7 if hero else 14), y + (5 if hero else 13),
          card.get("color", THEME["cyan"]), scale=1.38 if hero else 1.0, **icon_presentation(card))
@@ -1493,14 +1493,14 @@ def core_card(ex, draw, x, y, card, w=260):
 
 
 def mini_card(ex, draw, x, y, w, h, card, stroke, fill):
-    draw_rect(ex, draw, x, y, w, h, stroke, fill, 2, 8)
+    draw_rect(ex, draw, x, y, w, h, stroke, fill, 2, RADIUS_MD)
     icon(ex, draw, card.get("icon", "file"), x + 10, y + 10, card.get("color", THEME["cyan"]), **icon_presentation(card))
     draw_text(ex, draw, card.get("title", ""), x + 78, y + 12, 115, 24, 17, THEME["white"], "left", bold=True, fit=True, min_size=12)
     draw_text(ex, draw, card.get("body", ""), x + 78, y + 38, w - 92, h - 43, 12, THEME["white"], "left", spacing=3, fit=True, min_size=10)
 
 
 def pack_row(ex, draw, x, y, card):
-    draw_rect(ex, draw, x, y, 228, 84, THEME["green"], THEME["pack_card_fill"], 2, 8)
+    draw_rect(ex, draw, x, y, 228, 84, THEME["green"], THEME["pack_card_fill"], 2, RADIUS_MD)
     icon(ex, draw, card.get("icon", "file"), x + 12, y + 10, card.get("color", THEME["cyan"]), **icon_presentation(card))
     draw_text(ex, draw, card.get("title", ""), x + 86, y + 12, 120, 25, 17, THEME["white"], "center", bold=True, fit=True, min_size=12)
     draw_text(ex, draw, card.get("body", ""), x + 80, y + 42, 135, 30, 12, THEME["white"], "center", spacing=3, fit=True, min_size=10)
@@ -1511,11 +1511,11 @@ def draw_chrome(ex, draw, spec, plan):
     title = spec.get("title", {})
     draw_line(ex, draw, [(29, 31), (29, 78)], THEME["purple"], 11)
     draw_text(ex, draw, title.get("prefix", "The internals of"), 45, 14, 535, 66, 47, THEME["white"], "left", hand=True, bold=True)
-    draw_rect(ex, draw, 600, 27, 392, 72, THEME["highlight"], THEME["highlight"], 2, 16)
+    draw_rect(ex, draw, 600, 27, 392, 72, THEME["highlight"], THEME["highlight"], 2, RADIUS_FRAME)
     draw_text(ex, draw, title.get("highlight", "Memory Pack"), 622, 19, 350, 76, 44, THEME["green"], "center", hand=True, bold=True)
     draw_text(ex, draw, title.get("subtitle", ""), 104, 90, 420, 25, 15, THEME["muted"], "left")
     fx, fy, fw, fh = plan["frame"]
-    draw_rect(ex, draw, fx, fy, fw, fh, THEME["frame"], None, 2, 29)
+    draw_rect(ex, draw, fx, fy, fw, fh, THEME["frame"], None, 2, RADIUS_FRAME)
     # Formal output carries no branding by default; sketch mode keeps the
     # classic "@diagramforge" brand block. An explicit spec signature always
     # wins (e.g. a company attribution on a formal diagram).
@@ -1524,7 +1524,7 @@ def draw_chrome(ex, draw, spec, plan):
 
 def render_panorama(ex, draw, spec, plan):
     inputs_plan = plan["inputs"]
-    draw_rect(ex, draw, *inputs_plan["box"], THEME["green"], None, 2, 8)
+    draw_rect(ex, draw, *inputs_plan["box"], THEME["green"], None, 2, RADIUS_MD)
     box_cx = inputs_plan["box"][0] + inputs_plan["box"][2] / 2
     draw_text(ex, draw, spec.get("input_title", "Source / Input"), box_cx - 106, 137, 210, 28, 22, THEME["white"], "center", hand=True, bold=True)
     plain_inputs = spec.get("input_style", "boxed") == "plain"
@@ -1536,7 +1536,7 @@ def render_panorama(ex, draw, spec, plan):
     core = spec.get("core", {})
     core_plan = plan["core"]
     card_w = core_plan["w"]
-    draw_rect(ex, draw, *core_plan["group"], THEME["core_stroke"], THEME["core_fill"], 2, 20)
+    draw_rect(ex, draw, *core_plan["group"], THEME["core_stroke"], THEME["core_fill"], 2, RADIUS_FRAME)
     draw_text(ex, draw, core.get("title", "Archive Core"), 462, 327, 210, 31, 22, THEME["white"], "center", hand=True, bold=True)
     draw_text(ex, draw, core.get("subtitle", "(local read-only pipeline)"), 635, 336, 220, 23, 13, THEME["white"], "center")
     for i, (x, card) in enumerate(zip(core_plan["xs"], core_plan["cards"])):
@@ -1550,7 +1550,7 @@ def render_panorama(ex, draw, spec, plan):
     draw_diamond(ex, draw, 706, 508, 120, 120, THEME["green"], THEME["decision_fill"], 2)
     draw_text(ex, draw, decision.get("title", "Ready?"), 728, 541, 78, 26, 20, THEME["white"], "center", fit=True, min_size=14)
     draw_text(ex, draw, decision.get("body", ""), 728, 569, 78, 34, 14, THEME["white"], "center", fit=True, min_size=10)
-    draw_rect(ex, draw, 1022, 527, 100, 94, THEME["core_stroke"], THEME["blue_fill"], 2, 9)
+    draw_rect(ex, draw, 1022, 527, 100, 94, THEME["core_stroke"], THEME["blue_fill"], 2, RADIUS_MD)
     icon(ex, draw, spec.get("output", {}).get("icon", "file"), 1035, 537, THEME["cyan"], **icon_presentation(spec.get("output", {})))
     draw_text(ex, draw, spec.get("output", {}).get("label", "Report"), 1038, 588, 70, 24, 18, THEME["white"], "center", bold=True, fit=True, min_size=12)
     draw_line(ex, draw, [(826, 568), (1022, 568)], THEME["white"], 2, "solid", True)
@@ -1571,7 +1571,7 @@ def render_panorama(ex, draw, spec, plan):
         draw_line(ex, draw, [(lx + 166, 736), (lx + 166, 637)], THEME["white"], 2, "solid", True)
         draw_text(ex, draw, left.get("down_label", "Read"), lx + 40, 677, 105, 22, 16, THEME["white"], "center", fit=True, min_size=10)
         draw_text(ex, draw, left.get("up_label", "Context"), lx + 169, 676, 76, 22, 16, THEME["white"], "center", fit=True, min_size=10)
-        draw_rect(ex, draw, lx, 735, 281, 344, THEME["green"], THEME["source_fill"], 2, 14)
+        draw_rect(ex, draw, lx, 735, 281, 344, THEME["green"], THEME["source_fill"], 2, RADIUS_LG)
         draw_text(ex, draw, left.get("title", "Memory Sources"), lx + 19, 752, 180, 30, 22, THEME["white"], "left", hand=True, bold=True)
         if left.get("badge_file"):
             custom_image(ex, draw, left["badge_file"], lx + 192, 758, 76, 28)
@@ -1583,7 +1583,7 @@ def render_panorama(ex, draw, spec, plan):
     if "center_panel" in present:
         cx0 = px["center_panel"]
         center = spec.get("center_panel", {})
-        draw_rect(ex, draw, cx0, 734, 522, 346, THEME["purple"], THEME["archive_fill"], 2, 14)
+        draw_rect(ex, draw, cx0, 734, 522, 346, THEME["purple"], THEME["archive_fill"], 2, RADIUS_LG)
         draw_text(ex, draw, center.get("title", "Archive Layers"), cx0 + 179, 756, 180, 34, 23, THEME["white"], "center", hand=True, bold=True)
         draw_text(ex, draw, center.get("subtitle", "(local, readable, traceable storage)"), cx0 + 111, 790, 300, 24, 14, THEME["white"], "center")
         layer_xs = panels["layer_xs"]
@@ -1591,13 +1591,13 @@ def render_panorama(ex, draw, spec, plan):
         while len(layer_cards) < len(layer_xs):
             layer_cards.append({"title": "", "body": "", "icon": "file"})
         for i, (x, card) in enumerate(zip(layer_xs, layer_cards)):
-            draw_rect(ex, draw, x, 827, 112, 142, THEME["purple"], THEME["layer_card_fill"], 2, 8)
+            draw_rect(ex, draw, x, 827, 112, 142, THEME["purple"], THEME["layer_card_fill"], 2, RADIUS_MD)
             icon(ex, draw, card.get("icon", "file"), x + 18, 840, card.get("color", THEME["cyan"]), **icon_presentation(card))
             draw_text(ex, draw, card.get("title", ""), x + 10, 910, 92, 25, 18, THEME["white"], "center", bold=True, fit=True, min_size=12)
             draw_text(ex, draw, card.get("body", ""), x + 8, 936, 96, 28, 11, THEME["white"], "center", spacing=2, fit=True, min_size=8)
             if i:
                 draw_line(ex, draw, [(layer_xs[i - 1] + 112, 890), (x, 890)], THEME["white"], 2, "solid", True)
-        draw_rect(ex, draw, cx0 + 158, 1010, 220, 50, THEME["purple"], THEME["archive_fill"], 2, 8)
+        draw_rect(ex, draw, cx0 + 158, 1010, 220, 50, THEME["purple"], THEME["archive_fill"], 2, RADIUS_MD)
         draw_text(ex, draw, center.get("footer", "Redact + Dedup"), cx0 + 195, 1017, 165, 33, 20, THEME["white"], "center", hand=True, bold=True, fit=True, min_size=14)
         draw_line(ex, draw, [(cx0 + 270, 969), (cx0 + 270, 1010)], THEME["muted"], 2, "dashed", True)
 
@@ -1608,7 +1608,7 @@ def render_panorama(ex, draw, spec, plan):
             c_right = px["center_panel"] + 522
             draw_line(ex, draw, [(c_right, 890), (rx, 890)], THEME["white"], 2, "solid", True)
             draw_text(ex, draw, right.get("incoming_label", "Compile"), rx - 54, 868, 65, 20, 12, THEME["white"], "center")
-        draw_rect(ex, draw, rx, 735, 258, 344, THEME["green"], THEME["pack_fill"], 2, 14)
+        draw_rect(ex, draw, rx, 735, 258, 344, THEME["green"], THEME["pack_fill"], 2, RADIUS_LG)
         draw_text(ex, draw, right.get("title", "Memory Pack"), rx + 44, 750, 170, 34, 22, THEME["white"], "center", hand=True, bold=True)
         for y, card in zip(graph_model.PACK_YS, right.get("cards", [])[:3]):
             pack_row(ex, draw, rx + 14, y, card)
@@ -1757,12 +1757,12 @@ def render_grid(ex, draw, spec, plan):
         x, y, w, h = cell["_box"]
         tint = cell.get("_tint") or {"stroke": "green", "band": "source_fill", "column": "green_fill"}
         stroke = THEME[tint["stroke"]]
-        draw_rect(ex, draw, x, y, w, h, stroke, THEME[tint["band"]], 2, 12)
+        draw_rect(ex, draw, x, y, w, h, stroke, THEME[tint["band"]], 2, RADIUS_LG)
         draw_text(ex, draw, cell.get("title", ""), x + 18, y + 10, w - 36, 30, 19,
                   THEME["white"], "left", hand=True, bold=True, fit=True, min_size=12)
         for step in cell.get("steps", []):
             sx, sy, sw, sh = step["_box"]
-            draw_rect(ex, draw, sx, sy, sw, sh, stroke, THEME["icon_fill"], 1.5, 10)
+            draw_rect(ex, draw, sx, sy, sw, sh, stroke, THEME["icon_fill"], 1.5, RADIUS_MD)
             # Narrow catalog chips: icon centered on top, label below (like
             # the graph layout's narrow-card treatment).
             icon(ex, draw, step.get("icon", "file"), sx + (sw - 50) // 2, sy + 8,
@@ -1781,7 +1781,7 @@ def render_graph(ex, draw, spec, plan):
 
     for grp in plan.get("graph_groups", []):
         gx, gy, gw, gh = grp["box"]
-        draw_rect(ex, draw, gx, gy, gw, gh, THEME["muted"], None, 1.5, 14, "dashed")
+        draw_rect(ex, draw, gx, gy, gw, gh, THEME["muted"], None, 1.5, RADIUS_LG, "dashed")
         if grp.get("label"):
             draw_text(ex, draw, grp["label"], gx + 16, gy + 5, gw - 32, 22, 14,
                       THEME["muted"], "left", hand=True, bold=True, fit=True, min_size=10)
@@ -1790,14 +1790,6 @@ def render_graph(ex, draw, spec, plan):
         pts = [tuple(p) for p in edge["points"]]
         color = THEME.get(edge.get("color"), THEME["muted"])
         draw_line(ex, draw, pts, color, 2, edge.get("style", "solid"), True)
-        if edge.get("label"):
-            mx, my, horiz = _edge_label_anchor(pts)
-            dy = -16 if edge.get("badge") else 0  # keep clear of the badge on the line
-            draw_edge_label(ex, draw, edge["label"], mx, my, horiz, lw=150, lh=22, size=13,
-                            color=THEME["muted"] if edge.get("loop") else THEME["white"], min_size=9, dy=dy)
-        if edge.get("badge"):
-            mx, my, _horiz = _edge_label_anchor(pts)
-            draw_edge_badge(ex, draw, edge["badge"], mx, my, color)
 
     for g in plan["graph_nodes"]:
         x, y, w, h = g["_box"]
@@ -1822,7 +1814,7 @@ def render_graph(ex, draw, spec, plan):
             draw_text(ex, draw, g.get("label", ""), cx + 8, cy + 8, side - 16, side - 16, 14,
                       THEME["white"], "center", hand=True, bold=True, fit=True, min_size=9)
             continue
-        draw_rect(ex, draw, x, y, w, h, stroke, fill, 2, 12)
+        draw_rect(ex, draw, x, y, w, h, stroke, fill, 2, RADIUS_LG)
         icon_xy = g.get("_icon_xy")
         if icon_xy and w < 150:  # narrow card: icon on top, label under it
             icon(ex, draw, g["icon"], icon_xy[0], icon_xy[1], g.get("color", THEME["cyan"]), **icon_presentation(g))
@@ -1849,6 +1841,19 @@ def render_graph(ex, draw, spec, plan):
                 draw_text(ex, draw, g.get("label", ""), x + 10, y, w - 20, h, 17,
                           THEME["white"], "center", hand=True, bold=True, fit=True, min_size=11)
 
+    # Edge labels + badges last: node boxes must not clip the mask chips.
+    for edge in plan["graph_edges"]:
+        pts = [tuple(p) for p in edge["points"]]
+        color = THEME.get(edge.get("color"), THEME["muted"])
+        if edge.get("label"):
+            mx, my, horiz = _edge_label_anchor(pts)
+            dy = -16 if edge.get("badge") else 0  # keep clear of the badge on the line
+            draw_edge_label(ex, draw, edge["label"], mx, my, horiz, lw=150, lh=22, size=13,
+                            color=THEME["muted"] if edge.get("loop") else THEME["white"], min_size=9, dy=dy)
+        if edge.get("badge"):
+            mx, my, _horiz = _edge_label_anchor(pts)
+            draw_edge_badge(ex, draw, edge["badge"], mx, my, color)
+
     draw_legend(ex, draw, spec, plan)
     if spec.get("footer"):
         fy = plan["canvas"]["height"] - 74
@@ -1871,7 +1876,7 @@ def render_sequence(ex, draw, spec, plan):
     # arrows never clip them.
     fragments = sorted(seq["fragments"], key=lambda fr: -fr["depth"])
     for f in fragments:
-        draw_rect(ex, draw, f["x"], f["y"], f["w"], f["h"], THEME["muted"], None, 1.5, 6)
+        draw_rect(ex, draw, f["x"], f["y"], f["w"], f["h"], THEME["muted"], None, 1.5, RADIUS_MD)
         for d in f["dividers"]:
             draw_line(ex, draw, [(f["x"], d["y"]), (f["x"] + f["w"], d["y"])], THEME["muted"], 1.5, "dashed")
 
@@ -1881,7 +1886,7 @@ def render_sequence(ex, draw, spec, plan):
     for m in seq["messages"]:
         if m["kind"] == "note":
             nt = m["_note"]
-            draw_rect(ex, draw, nt["x"], nt["y"], nt["w"], nt["h"], THEME["amber"], THEME["icon_fill"], 1.5, 4)
+            draw_rect(ex, draw, nt["x"], nt["y"], nt["w"], nt["h"], THEME["amber"], THEME["icon_fill"], 1.5, RADIUS_SM)
             draw_text(ex, draw, m.get("text", ""), nt["x"] + 8, nt["y"] + 4, nt["w"] - 16, nt["h"] - 8, 12,
                       THEME["amber"], "center", fit=True, min_size=9)
             continue
@@ -1902,7 +1907,7 @@ def render_sequence(ex, draw, spec, plan):
     # Fragment tabs + guard/divider labels on top of bars and arrows.
     for f in fragments:
         tab_w = 64
-        draw_rect(ex, draw, f["x"], f["y"], tab_w, 24, THEME["muted"], THEME["icon_fill"], 1.5, 4)
+        draw_rect(ex, draw, f["x"], f["y"], tab_w, 24, THEME["muted"], THEME["icon_fill"], 1.5, RADIUS_SM)
         draw_text(ex, draw, f["kind"], f["x"], f["y"] + 1, tab_w, 22, 13, THEME["white"], "center", bold=True)
         if f["label"]:
             draw_text(ex, draw, f["label"], f["x"] + tab_w + 10, f["y"] + 1, max(60, f["w"] - tab_w - 20), 22, 13,
@@ -1915,7 +1920,7 @@ def render_sequence(ex, draw, spec, plan):
     # Participant heads on top of everything that crosses them.
     for p in seq["participants"]:
         accent = THEME.get(p["_accent"], THEME["green"])
-        draw_rect(ex, draw, p["_x"], p["_y"], p["_w"], p["_h"], accent, THEME["icon_fill"], 2, 10)
+        draw_rect(ex, draw, p["_x"], p["_y"], p["_w"], p["_h"], accent, THEME["icon_fill"], 2, RADIUS_MD)
         icon(ex, draw, p.get("icon") or ("user" if p["kind"] == "actor" else "server"),
              p["_x"] + 10, p["_y"] + 12, p.get("color", THEME["cyan"]), **icon_presentation(p))
         draw_text(ex, draw, p.get("label", ""), p["_x"] + 56, p["_y"] + 8, p["_w"] - 64, p["_h"] - 16, 16,
@@ -1933,8 +1938,8 @@ def render_er(ex, draw, spec, plan):
         x, y, w, h = e["_box"]
         accent = THEME.get(e["_accent"], THEME["green"])
         fill = THEME.get(graph_model.GRAPH_FILLS.get(e["_accent"], "icon_fill"), THEME["icon_fill"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 8)
-        draw_rect(ex, draw, x, y, w, graph_model.ER_HEADER_H, accent, fill, 2, 8)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
+        draw_rect(ex, draw, x, y, w, graph_model.ER_HEADER_H, accent, fill, 2, RADIUS_MD)
         draw_text(ex, draw, e.get("label", ""), x + 8, y + 4, w - 16, graph_model.ER_HEADER_H - 8, 16,
                   THEME["white"], "center", bold=True, fit=True, min_size=11)
         ay = y + graph_model.ER_HEADER_H + 6
@@ -1979,18 +1984,13 @@ def render_usecase(ex, draw, spec, plan):
         draw_text(ex, draw, spec["subtitle"], 105, 145, 1000, 30, 17, THEME["muted"], "center")
     uc = plan["usecase"]
     b = uc["boundary"]
-    draw_rect(ex, draw, b["x"], b["y"], b["w"], b["h"], THEME["frame"], None, 2, 12)
+    draw_rect(ex, draw, b["x"], b["y"], b["w"], b["h"], THEME["frame"], None, 2, RADIUS_LG)
     if b["label"]:
         draw_text(ex, draw, b["label"], b["x"] + 20, b["y"] + 8, b["w"] - 40, 28, 17,
                   THEME["muted"], "center", bold=True, fit=True, min_size=11)
     for l in uc["links"]:
         pts = l["_points"]
         draw_line(ex, draw, pts, THEME["white"], 1.5, l["_style"], l["_arrow"])
-        label = l["label"] or (f"«{l['kind']}»" if l["kind"] in ("include", "extend") else "")
-        if label:
-            mx, my, horiz = _edge_label_anchor(pts)
-            draw_edge_label(ex, draw, label, mx, my, horiz, lw=110, lh=18, size=11,
-                            color=THEME["muted"], min_size=8)
     for u in uc["usecases"]:
         x = u["_cx"] - graph_model.USECASE_ELLIPSE_W / 2
         y = u["_cy"] - graph_model.USECASE_ELLIPSE_H / 2
@@ -2002,6 +2002,13 @@ def render_usecase(ex, draw, spec, plan):
         _stick_actor(ex, draw, a["_cx"], a["_cy"], THEME["green"])
         draw_text(ex, draw, a.get("label", ""), a["_cx"] - 60, a["_cy"] + 48, 120, 22, 13,
                   THEME["white"], "center", bold=True, fit=True, min_size=9)
+    # Link labels last: ellipses and actors must not clip the mask chips.
+    for l in uc["links"]:
+        label = l["label"] or (f"«{l['kind']}»" if l["kind"] in ("include", "extend") else "")
+        if label:
+            mx, my, horiz = _edge_label_anchor(l["_points"])
+            draw_edge_label(ex, draw, label, mx, my, horiz, lw=110, lh=18, size=11,
+                            color=THEME["muted"], min_size=8)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14, THEME["muted"], "center")
 
@@ -2036,9 +2043,9 @@ def render_class(ex, draw, spec, plan):
         x, y, w, h = c["_box"]
         accent = THEME.get(c["_accent"], THEME["green"])
         fill = THEME.get(graph_model.GRAPH_FILLS.get(c["_accent"], "icon_fill"), THEME["icon_fill"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 8)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
         header_h = graph_model.CLASS_HEADER_H + (graph_model.CLASS_STEREO_H if c["_stereo"] else 0)
-        draw_rect(ex, draw, x, y, w, header_h, accent, fill, 2, 8)
+        draw_rect(ex, draw, x, y, w, header_h, accent, fill, 2, RADIUS_MD)
         if c["_stereo"]:
             draw_text(ex, draw, c["_stereo"], x + 8, y + 2, w - 16, graph_model.CLASS_STEREO_H, 10,
                       THEME["muted"], "center", fit=True, min_size=8)
@@ -2141,7 +2148,7 @@ def render_state(ex, draw, spec, plan):
             continue
         accent = THEME.get(s["_accent"], THEME["green"])
         fill = THEME.get(graph_model.GRAPH_FILLS.get(s["_accent"], "icon_fill"), THEME["icon_fill"])
-        draw_rect(ex, draw, x, y, w, h, accent, fill, 2, 14)
+        draw_rect(ex, draw, x, y, w, h, accent, fill, 2, RADIUS_LG)
         draw_text(ex, draw, s.get("label", ""), x + 10, y + 3, w - 20, graph_model.STATE_HEADER_H - 4, 15,
                   THEME["white"], "center", bold=True, fit=True, min_size=10)
         if s["_body"]:
@@ -2174,7 +2181,7 @@ def render_dfd(ex, draw, spec, plan):
         accent = THEME.get(n["_accent"], THEME["green"])
         fill = THEME.get(graph_model.GRAPH_FILLS.get(n["_accent"], "icon_fill"), THEME["icon_fill"])
         if n["kind"] == "external":
-            draw_rect(ex, draw, x, y, w, h, accent, fill, 2, 6)
+            draw_rect(ex, draw, x, y, w, h, accent, fill, 2, RADIUS_MD)
             draw_text(ex, draw, n.get("label", ""), x + 10, y + 10, w - 20, h - 20, 14,
                       THEME["white"], "center", bold=True, fit=True, min_size=10)
         elif n["kind"] == "process":
@@ -2225,13 +2232,13 @@ def render_deployment(ex, draw, spec, plan):
         x, y, w, h = n["_box"]
         accent = THEME.get(n["_accent"], THEME["green"])
         if n["kind"] == "artifact":
-            draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 1.5, 4)
+            draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 1.5, RADIUS_SM)
             draw_text(ex, draw, n["_stereo"], x + 8, y + 4, w - 16, 14, 9, THEME["muted"], "center")
             draw_text(ex, draw, n.get("label", ""), x + 8, y + 18, w - 16, h - 24, 13,
                       THEME["white"], "center", bold=True, fit=True, min_size=9)
             continue
         d = 12
-        draw_rect(ex, draw, x, y + d, w - d, h - d, accent, THEME["icon_fill"], 2, 6)
+        draw_rect(ex, draw, x, y + d, w - d, h - d, accent, THEME["icon_fill"], 2, RADIUS_MD)
         for face in _cube_lines(x, y, w, h, d)[:1]:
             draw_line(ex, draw, face, accent, 1.5)
         if n["_stereo"]:
@@ -2260,7 +2267,7 @@ def render_component(ex, draw, spec, plan):
     for c in cmp_plan["components"]:
         x, y, w, h = c["_box"]
         accent = THEME.get(c["_accent"], THEME["green"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 8)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
         # UML component glyph: small box with two tabs, top-right corner.
         gx, gy = x + w - 30, y + 8
         draw_rect(ex, draw, gx, gy, 20, 14, accent, None, 1.5, 2)
@@ -2312,8 +2319,8 @@ def render_package(ex, draw, spec, plan):
         accent = THEME.get(p["_accent"], THEME["green"])
         is_container = bool(pkg["children"].get(p["id"]))
         body_y = y + tab_h
-        draw_rect(ex, draw, x, body_y, w, h - tab_h, accent, _box_fill(p["_accent"]), 2, 6)
-        draw_rect(ex, draw, x, y, tab_w, tab_h, accent, _box_fill(p["_accent"]), 2, 4)
+        draw_rect(ex, draw, x, body_y, w, h - tab_h, accent, _box_fill(p["_accent"]), 2, RADIUS_MD)
+        draw_rect(ex, draw, x, y, tab_w, tab_h, accent, _box_fill(p["_accent"]), 2, RADIUS_SM)
         if p["_stereo"]:
             draw_text(ex, draw, p["_stereo"], x + tab_w + 6, y + 2, w - tab_w - 12, 14, 9,
                       THEME["muted"], "left", fit=True, min_size=8)
@@ -2342,8 +2349,8 @@ def render_object(ex, draw, spec, plan):
     for o in obj["objects"]:
         x, y, w, h = o["_box"]
         accent = THEME.get(o["_accent"], THEME["green"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 8)
-        draw_rect(ex, draw, x, y, w, graph_model.OBJECT_HEADER_H, accent, _box_fill(o["_accent"]), 2, 8)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
+        draw_rect(ex, draw, x, y, w, graph_model.OBJECT_HEADER_H, accent, _box_fill(o["_accent"]), 2, RADIUS_MD)
         draw_text(ex, draw, o["_title"], x + 8, y + 3, w - 16, graph_model.OBJECT_HEADER_H - 8, 14,
                   THEME["white"], "center", bold=True, fit=True, min_size=10)
         # UML instance names are underlined.
@@ -2371,7 +2378,7 @@ def render_composite(ex, draw, spec, plan):
         draw_text(ex, draw, spec["subtitle"], 105, 145, 1000, 30, 17, THEME["muted"], "center")
     comp = plan["composite"]
     b = comp["boundary"]
-    draw_rect(ex, draw, b["x"], b["y"], b["w"], b["h"], THEME["frame"], None, 2, 12)
+    draw_rect(ex, draw, b["x"], b["y"], b["w"], b["h"], THEME["frame"], None, 2, RADIUS_LG)
     if b["label"]:
         draw_text(ex, draw, b["label"], b["x"] + b["w"] - 220, b["y"] + 8, 200, 26, 15,
                   THEME["muted"], "right", bold=True, fit=True, min_size=10)
@@ -2384,7 +2391,7 @@ def render_composite(ex, draw, spec, plan):
     for p in comp["parts"]:
         x, y, w, h = p["_box"]
         accent = THEME.get(p["_accent"], THEME["green"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 8)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
         title = p.get("label", "") + (f": {p['_type']}" if p["_type"] else "")
         draw_text(ex, draw, title, x + 10, y + 12, w - 20, h - 24, 14,
                   THEME["white"], "center", bold=True, fit=True, min_size=10)
@@ -2416,9 +2423,9 @@ def render_profile(ex, draw, spec, plan):
     for it in prof["items"]:
         x, y, w, h = it["_box"]
         accent = THEME.get(it["_accent"], THEME["green"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 8)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
         header_h = graph_model.PROFILE_HEADER_H + graph_model.PROFILE_STEREO_H
-        draw_rect(ex, draw, x, y, w, header_h, accent, _box_fill(it["_accent"]), 2, 8)
+        draw_rect(ex, draw, x, y, w, header_h, accent, _box_fill(it["_accent"]), 2, RADIUS_MD)
         draw_text(ex, draw, it["_stereo"], x + 8, y + 2, w - 16, graph_model.PROFILE_STEREO_H, 10,
                   THEME["muted"], "center", fit=True, min_size=8)
         draw_text(ex, draw, it.get("label", ""), x + 8, y + graph_model.PROFILE_STEREO_H + 3,
@@ -2447,7 +2454,7 @@ def render_communication(ex, draw, spec, plan):
     for o in comm["objects"]:
         x, y, w, h = o["_box"]
         accent = THEME.get(o["_accent"], THEME["green"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 10)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
         draw_text(ex, draw, o.get("label", ""), x + 10, y + 10, w - 20, h - 20, 14,
                   THEME["white"], "center", bold=True, fit=True, min_size=10)
     for l in comm["links"]:
@@ -2524,7 +2531,7 @@ def render_interaction(ex, draw, spec, plan):
                       THEME["white"], "center", fit=True, min_size=9)
         else:
             accent = THEME.get(n["_accent"], THEME["green"])
-            draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 6)
+            draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
             # UML frame tab: pentagon tag with the ref keyword (sd / ref).
             tab_w = 56
             draw_line(ex, draw, [(x, y + 22), (x, y), (x + tab_w - 12, y), (x + tab_w, y + 11),
@@ -2552,17 +2559,12 @@ def render_c4(ex, draw, spec, plan):
         if not b["_box"]:
             continue
         x, y, w, h = b["_box"]
-        draw_rect(ex, draw, x, y, w, h, THEME["muted"], None, 1.5, 10)
+        draw_rect(ex, draw, x, y, w, h, THEME["muted"], None, 1.5, RADIUS_MD)
         if b["label"]:
             draw_text(ex, draw, b["label"], x + 12, y + h - 26, w - 24, 20, 12,
                       THEME["muted"], "left", fit=True, min_size=9)
     for r in c4["relations"]:
         draw_line(ex, draw, r["_points"], THEME["white"], 1.5, r["_style"], "open")
-        label = r["label"] + (f" [{r['technology']}]" if r["technology"] else "")
-        if label:
-            mx, my, horiz = _edge_label_anchor(r["_points"])
-            draw_edge_label(ex, draw, label, mx, my, horiz, lw=160, lh=20, size=11,
-                            color=THEME["white"], min_size=8)
     stereo_of = {"person": "«person»", "system": "«system»", "ext_system": "«external system»",
                  "container": "«container»", "database": "«database»", "queue": "«queue»"}
     for e in c4["elements"]:
@@ -2571,10 +2573,10 @@ def render_c4(ex, draw, spec, plan):
         if e["kind"] == "database":
             # Cylinder approximation: ellipse lid + body rect + bottom arc line.
             draw_ellipse(ex, draw, x, y, w, 26, accent, _box_fill(e["_accent"]), 2)
-            draw_rect(ex, draw, x, y + 13, w, h - 26, accent, THEME["icon_fill"], 2, 4)
+            draw_rect(ex, draw, x, y + 13, w, h - 26, accent, THEME["icon_fill"], 2, RADIUS_SM)
             draw_ellipse(ex, draw, x, y + h - 26, w, 26, accent, None, 2)
         else:
-            radius = 20 if e["kind"] == "person" else 10
+            radius = RADIUS_FRAME if e["kind"] == "person" else RADIUS_MD
             draw_rect(ex, draw, x, y, w, h, accent,
                       _box_fill(e["_accent"]) if e["kind"] != "ext_system" else THEME["icon_fill"],
                       2, radius)
@@ -2593,6 +2595,13 @@ def render_c4(ex, draw, spec, plan):
         if e["_desc"]:
             draw_text(ex, draw, e["_desc"], x + 12, text_top + 44, w - 24, h - (text_top - y) - 50, 10,
                       THEME["muted"], "center", spacing=2, fit=True, min_size=8)
+    # Relation labels last: element boxes must not clip the mask chips.
+    for r in c4["relations"]:
+        label = r["label"] + (f" [{r['technology']}]" if r["technology"] else "")
+        if label:
+            mx, my, horiz = _edge_label_anchor(r["_points"])
+            draw_edge_label(ex, draw, label, mx, my, horiz, lw=160, lh=20, size=11,
+                            color=THEME["white"], min_size=8)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2632,7 +2641,7 @@ def render_gantt(ex, draw, spec, plan):
                 stroke, fill = THEME["pink"], THEME["icon_fill"]
             else:
                 stroke, fill = THEME["cyan"], THEME["blue_fill"]
-            draw_rect(ex, draw, t["_x0"], bar_y, w, 18, stroke, fill, 2, 8)
+            draw_rect(ex, draw, t["_x0"], bar_y, w, 18, stroke, fill, 2, RADIUS_MD)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2644,7 +2653,7 @@ def render_bpmn(ex, draw, spec, plan):
     bp = plan["bpmn"]
     for lane in bp["lanes"]:
         y, h = lane["_y"], lane["_h"]
-        draw_rect(ex, draw, 70, y, 1080, h, THEME["frame"], None, 1.5, 8)
+        draw_rect(ex, draw, 70, y, 1080, h, THEME["frame"], None, 1.5, RADIUS_MD)
         if lane["label"] or lane["pool"]:
             label = (lane["pool"] + " / " if lane["pool"] else "") + lane["label"]
             draw_text(ex, draw, label, 80, y + 6, 200, 22, 13, THEME["muted"], "left",
@@ -2682,7 +2691,7 @@ def render_bpmn(ex, draw, spec, plan):
                 draw_text(ex, draw, e["label"], x - 30, y + h + 4, w + 60, 18, 11,
                           THEME["white"], "center", fit=True, min_size=8)
         else:
-            draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 12)
+            draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_LG)
             draw_text(ex, draw, e.get("label", ""), x + 10, y + 10, w - 20, h - 20, 13,
                       THEME["white"], "center", bold=True, fit=True, min_size=9)
     if spec.get("footer"):
@@ -2699,7 +2708,7 @@ def render_orgchart(ex, draw, spec, plan):
     for n in org["nodes"]:
         x, y, w, h = n["_box"]
         accent = THEME.get(n["_accent"], THEME["green"])
-        draw_rect(ex, draw, x, y, w, h, accent, _box_fill(n["_accent"]), 2, 10)
+        draw_rect(ex, draw, x, y, w, h, accent, _box_fill(n["_accent"]), 2, RADIUS_MD)
         if n["_role"]:
             draw_text(ex, draw, n.get("label", ""), x + 8, y + 8, w - 16, 24, 14,
                       THEME["white"], "center", bold=True, fit=True, min_size=10)
@@ -2722,13 +2731,13 @@ def render_mindmap(ex, draw, spec, plan):
                   THEME.get(edge.get("color"), THEME["white"]), 1.5, "solid", False)
     root = mm["root"]
     x, y, w, h = root["_box"]
-    draw_rect(ex, draw, x, y, w, h, THEME["green"], THEME["green_fill"], 2.5, 18)
+    draw_rect(ex, draw, x, y, w, h, THEME["green"], THEME["green_fill"], 2.5, RADIUS_FRAME)
     draw_text(ex, draw, root["label"], x + 10, y + 10, w - 20, h - 20, 16,
               THEME["white"], "center", hand=True, bold=True, fit=True, min_size=11)
     for t in mm["topics"]:
         x, y, w, h = t["_box"]
         accent = THEME.get(t["_accent"], THEME["green"])
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 14)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_LG)
         draw_text(ex, draw, t.get("label", ""), x + 8, y + 8, w - 16, h - 16, 13,
                   THEME["white"], "center", bold=True, fit=True, min_size=9)
     # Leaves are the terminal pills in the interaction node list.
@@ -2756,7 +2765,7 @@ def render_timeline(ex, draw, spec, plan):
         draw_line(ex, draw, e["_stem"], THEME["frame"], 1.5)
         draw_ellipse(ex, draw, dx - 6, dy - 6, 12, 12, accent, accent, 2)
         x, y, w, h = e["_box"]
-        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, 10)
+        draw_rect(ex, draw, x, y, w, h, accent, THEME["icon_fill"], 2, RADIUS_MD)
         if e.get("time"):
             draw_text(ex, draw, str(e["time"]), x + 8, y + 6, w - 16, 16, 10,
                       accent, "center", bold=True, fit=True, min_size=8)
@@ -2781,7 +2790,7 @@ def render_fishbone(ex, draw, spec, plan):
     spine = fb["spine"]
     draw_line(ex, draw, [(spine["x0"], spine["y"]), (spine["x1"], spine["y"])], THEME["white"], 3, "solid", "open")
     head = fb["head"]
-    draw_rect(ex, draw, head["x"], head["y"], head["w"], head["h"], THEME["pink"], THEME["icon_fill"], 2, 10)
+    draw_rect(ex, draw, head["x"], head["y"], head["w"], head["h"], THEME["pink"], THEME["icon_fill"], 2, RADIUS_MD)
     draw_text(ex, draw, fb["problem"], head["x"] + 12, head["y"] + 14, head["w"] - 24, head["h"] - 28, 15,
               THEME["white"], "center", bold=True, fit=True, min_size=10)
     for c in fb["categories"]:
