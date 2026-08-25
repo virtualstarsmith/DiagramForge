@@ -1,0 +1,15 @@
+{
+  "name": "diagramforge",
+  "owner": {
+    "name": "DiagramForge"
+  },
+  "plugins": [
+    {
+      "name": "diagramforge",
+      "version": "2.1.0",
+      "description": "Business-formal animated diagrams: 27 layouts (all 14 UML types, C4, BPMN, gantt, orgchart, mindmap, timeline, fishbone, panorama/swimlane/graph/grid), four formal styles + custom brand themes, PNG/GIF/MP4/SVG/HTML/Excalidraw/Lottie output, Mermaid and draw.io import.",
+      "source": "./",
+      "strict": true
+    }
+  ]
+}

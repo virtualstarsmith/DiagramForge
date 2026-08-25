@@ -1,4 +1,45 @@
-# DiagramForge Technical Upgrade Notes
+# Upgrading & migration
+
+**For users of an installed DiagramForge skill copy.** The development record
+follows below; this section is the one you need after an update.
+
+## What survives an update
+
+Yours forever (the sync never touches them): your spec files,
+`~/.diagramforge/themes/*.json` brand profiles, `.diagramforge` project
+markers, everything under `out/` and `gallery/`. See
+`references/branding.md` § Customization persistence promise.
+
+Package-owned and replaced on update: `scripts/`, `assets/`, `references/`,
+`SKILL.md`. If you edited those, keep a git checkout and rebase deliberately.
+
+## How to update
+
+1. Pull or re-copy the new skill source over the installed directory.
+2. Re-run `python -X utf8 scripts/doctor.py` — new capabilities may need new
+   optional dependencies (the report says exactly what is missing).
+3. Re-run `--validate-only` on one spec per layout you use; breaking spec
+   changes are always announced in the version notes below.
+
+Versions follow semver; `pyproject.toml` is the source of truth and every
+host manifest is kept in sync (`scripts/bump_version.py --check` gates it).
+
+## What changed (user-facing)
+
+- **2.2 (this pass)** — custom brand themes (`style: "custom"` +
+  `scripts/onboard_brand.py`), draw.io import (`scripts/drawio_import.py`,
+  all four containers), import dials (`--detail/--audience/--size`) with a
+  fidelity ledger, accessible-SVG contract on every export, output security
+  linter (`scripts/lint_output.py`), and example gallery
+  (`scripts/build_gallery.py`). No breaking spec changes.
+- **2.1** — ELK layout engine becomes the default for graph/activity
+  (`layout_engine: "legacy"` pins the old behavior), render cache, Lottie /
+  PDF / WebP / AVIF outputs, text-to-outline SVG mode, subprocess-coverage
+  test rig.
+
+---
+
+# Development history (2.x → 2.1 modernization)
 
 A record of the 2.x → 2.1 modernization pass: what changed, the measured
 impact, and the engineering decisions behind the parts that were *not* done.

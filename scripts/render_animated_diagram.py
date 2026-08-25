@@ -1892,12 +1892,12 @@ def render_sequence(ex, draw, spec, plan):
             continue
         if m["kind"] == "self":
             draw_text(ex, draw, label, pts[0][0] + 74, pts[0][1] + 2, 150, 22, 13,
-                      THEME["white"], "left", fit=True, min_size=10)
+                      THEME["white"], "left", fit=True, min_size=10, mask=True, role="edge-label")
         else:
             lx = min(pts[0][0], pts[-1][0])
             lw = max(90, abs(pts[-1][0] - pts[0][0]) - 16)
             draw_text(ex, draw, label, lx + 8, pts[0][1] - 30, lw, 24, 14,
-                      THEME["white"], "center", fit=True, min_size=10)
+                      THEME["white"], "center", fit=True, min_size=10, mask=True, role="edge-label")
 
     # Fragment tabs + guard/divider labels on top of bars and arrows.
     for f in fragments:
@@ -1910,7 +1910,7 @@ def render_sequence(ex, draw, spec, plan):
         for d in f["dividers"]:
             if d["label"]:
                 draw_text(ex, draw, d["label"], f["x"] + 10, d["y"] - 25, 240, 22, 12,
-                          THEME["muted"], "left", fit=True, min_size=9)
+                          THEME["muted"], "left", fit=True, min_size=9, mask=True)
 
     # Participant heads on top of everything that crosses them.
     for p in seq["participants"]:
@@ -1953,14 +1953,14 @@ def render_er(ex, draw, spec, plan):
         p1, p2 = pts[0], pts[-1]
         if r.get("from_card"):
             draw_text(ex, draw, r["from_card"], p1[0] + (10 if p2[0] >= p1[0] else -34), p1[1] - 24, 26, 18, 12,
-                      THEME["muted"], "center", fit=True, min_size=9)
+                      THEME["muted"], "center", fit=True, min_size=9, mask=True, role="edge-label")
         if r.get("to_card"):
             draw_text(ex, draw, r["to_card"], p2[0] + (-38 if p2[0] >= p1[0] else 12), p2[1] - 24, 26, 18, 12,
-                      THEME["muted"], "center", fit=True, min_size=9)
+                      THEME["muted"], "center", fit=True, min_size=9, mask=True, role="edge-label")
         if r.get("label"):
-            mx, my, _horiz = _edge_label_anchor(pts)
-            draw_text(ex, draw, r["label"], mx - 60, my - 22, 120, 20, 13, THEME["white"], "center",
-                      fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(pts)
+            draw_edge_label(ex, draw, r["label"], mx, my, horiz, lw=120, lh=20, size=13,
+                            color=THEME["white"], min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14, THEME["muted"], "center")
 
@@ -1988,9 +1988,9 @@ def render_usecase(ex, draw, spec, plan):
         draw_line(ex, draw, pts, THEME["white"], 1.5, l["_style"], l["_arrow"])
         label = l["label"] or (f"«{l['kind']}»" if l["kind"] in ("include", "extend") else "")
         if label:
-            mx, my, _horiz = _edge_label_anchor(pts)
-            draw_text(ex, draw, label, mx - 55, my - 20, 110, 18, 11, THEME["muted"], "center",
-                      fit=True, min_size=8)
+            mx, my, horiz = _edge_label_anchor(pts)
+            draw_edge_label(ex, draw, label, mx, my, horiz, lw=110, lh=18, size=11,
+                            color=THEME["muted"], min_size=8)
     for u in uc["usecases"]:
         x = u["_cx"] - graph_model.USECASE_ELLIPSE_W / 2
         y = u["_cy"] - graph_model.USECASE_ELLIPSE_H / 2
@@ -2070,14 +2070,14 @@ def render_class(ex, draw, spec, plan):
         p1, p2 = pts[0], pts[-1]
         if r.get("from_card"):
             draw_text(ex, draw, r["from_card"], p1[0] + 12, p1[1] - 24, 30, 18, 11,
-                      THEME["muted"], "center", fit=True, min_size=8)
+                      THEME["muted"], "center", fit=True, min_size=8, mask=True, role="edge-label")
         if r.get("to_card"):
             draw_text(ex, draw, r["to_card"], p2[0] - 42, p2[1] - 24, 30, 18, 11,
-                      THEME["muted"], "center", fit=True, min_size=8)
+                      THEME["muted"], "center", fit=True, min_size=8, mask=True, role="edge-label")
         if r.get("label"):
-            mx, my, _horiz = _edge_label_anchor(pts)
-            draw_text(ex, draw, r["label"], mx - 60, my - 22, 120, 20, 12, THEME["white"], "center",
-                      fit=True, min_size=8)
+            mx, my, horiz = _edge_label_anchor(pts)
+            draw_edge_label(ex, draw, r["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=THEME["white"], min_size=8)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14, THEME["muted"], "center")
 
@@ -2120,9 +2120,9 @@ def render_activity(ex, draw, spec, plan):
     for e in act["edges"]:
         if e["label"]:
             color = THEME["muted"] if e["_back"] else THEME["white"]
-            mx, my, _horiz = _edge_label_anchor(e["_points"])
-            draw_text(ex, draw, e["label"], mx - 60, my - 22, 120, 20, 12,
-                      color, "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(e["_points"])
+            draw_edge_label(ex, draw, e["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=color, min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14, THEME["muted"], "center")
 
@@ -2155,9 +2155,9 @@ def render_state(ex, draw, spec, plan):
                     by += graph_model.STATE_BODY_H
     for t in st["transitions"]:
         if t["label"]:
-            mx, my, _horiz = _edge_label_anchor(t["_points"])
-            draw_text(ex, draw, t["label"], mx - 80, my - 22, 160, 20, 12,
-                      THEME["white"], "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(t["_points"])
+            draw_edge_label(ex, draw, t["label"], mx, my, horiz, lw=160, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14, THEME["muted"], "center")
 
@@ -2195,9 +2195,9 @@ def render_dfd(ex, draw, spec, plan):
                       THEME["white"], "center", fit=True, min_size=9)
     for f in dfd["flows"]:
         if f["label"]:
-            mx, my, _horiz = _edge_label_anchor(f["_points"])
-            draw_text(ex, draw, f["label"], mx - 70, my - 22, 140, 20, 12,
-                      THEME["white"], "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(f["_points"])
+            draw_edge_label(ex, draw, f["label"], mx, my, horiz, lw=140, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14, THEME["muted"], "center")
 
@@ -2245,9 +2245,9 @@ def render_deployment(ex, draw, spec, plan):
     for c in dep["connections"]:
         draw_line(ex, draw, c["_points"], THEME["white"], 1.5, c["_style"], c["_arrow"])
         if c["label"]:
-            mx, my, _horiz = _edge_label_anchor(c["_points"])
-            draw_text(ex, draw, c["label"], mx - 70, my - 22, 140, 20, 12,
-                      THEME["white"], "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(c["_points"])
+            draw_edge_label(ex, draw, c["label"], mx, my, horiz, lw=140, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2279,9 +2279,9 @@ def render_component(ex, draw, spec, plan):
     for r in cmp_plan["relations"]:
         draw_line(ex, draw, r["_points"], THEME["white"], 1.5, r["_style"], r["_arrow"])
         if r["label"]:
-            mx, my, _horiz = _edge_label_anchor(r["_points"])
-            draw_text(ex, draw, r["label"], mx - 60, my - 22, 120, 20, 12,
-                      THEME["white"], "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(r["_points"])
+            draw_edge_label(ex, draw, r["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     for itf in cmp_plan["interfaces"]:
         r = graph_model.COMPONENT_IF_R
         cx, cy = itf["_cx"], itf["_cy"]
@@ -2327,9 +2327,9 @@ def render_package(ex, draw, spec, plan):
         draw_line(ex, draw, r["_points"], THEME["white"], 1.5, "dashed", "open")
         label = r["label"] or (f"«{r['kind']}»" if r["kind"] != "dependency" else "")
         if label:
-            mx, my, _horiz = _edge_label_anchor(r["_points"])
-            draw_text(ex, draw, label, mx - 55, my - 20, 110, 18, 11, THEME["muted"], "center",
-                      fit=True, min_size=8)
+            mx, my, horiz = _edge_label_anchor(r["_points"])
+            draw_edge_label(ex, draw, label, mx, my, horiz, lw=110, lh=18, size=11,
+                            color=THEME["muted"], min_size=8)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2358,9 +2358,9 @@ def render_object(ex, draw, spec, plan):
     for l in obj["links"]:
         draw_line(ex, draw, l["_points"], THEME["white"], 1.5, "solid", False)
         if l["label"]:
-            mx, my, _horiz = _edge_label_anchor(l["_points"])
-            draw_text(ex, draw, l["label"], mx - 60, my - 22, 120, 20, 12,
-                      THEME["white"], "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(l["_points"])
+            draw_edge_label(ex, draw, l["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2378,9 +2378,9 @@ def render_composite(ex, draw, spec, plan):
     for c in comp["connectors"]:
         draw_line(ex, draw, c["_points"], THEME["white"], 1.5, "solid", False)
         if c["label"]:
-            mx, my, _horiz = _edge_label_anchor(c["_points"])
-            draw_text(ex, draw, c["label"], mx - 60, my - 22, 120, 20, 12,
-                      THEME["white"], "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(c["_points"])
+            draw_edge_label(ex, draw, c["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     for p in comp["parts"]:
         x, y, w, h = p["_box"]
         accent = THEME.get(p["_accent"], THEME["green"])
@@ -2432,9 +2432,9 @@ def render_profile(ex, draw, spec, plan):
     for r in prof["relations"]:
         draw_line(ex, draw, r["_points"], THEME["white"], 1.5, r["_style"], r["_arrow"])
         if r["label"]:
-            mx, my, _horiz = _edge_label_anchor(r["_points"])
-            draw_text(ex, draw, r["label"], mx - 60, my - 22, 120, 20, 12,
-                      THEME["white"], "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(r["_points"])
+            draw_edge_label(ex, draw, r["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2462,7 +2462,7 @@ def render_communication(ex, draw, spec, plan):
         for k, m in enumerate(l["messages"]):
             ly = my - 26 * (k + 1) if horiz else my - 13 + 26 * (k - len(l["messages"]) / 2)
             draw_text(ex, draw, f"{m['num']}: {m['label']}", mx - 75, ly - 9, 150, 18, 11,
-                      THEME["white"], "center", fit=True, min_size=8)
+                      THEME["white"], "center", fit=True, min_size=8, mask=True, role="edge-label")
             sign = fwd_sign if m["dir"] == "forward" else -fwd_sign
             if horiz:
                 x0 = mx - 106 if sign > 0 else mx + 92
@@ -2536,9 +2536,9 @@ def render_interaction(ex, draw, spec, plan):
     for e in inter["edges"]:
         if e["label"]:
             color = THEME["muted"] if e["_back"] else THEME["white"]
-            mx, my, _horiz = _edge_label_anchor(e["_points"])
-            draw_text(ex, draw, e["label"], mx - 60, my - 22, 120, 20, 12,
-                      color, "center", fit=True, min_size=9)
+            mx, my, horiz = _edge_label_anchor(e["_points"])
+            draw_edge_label(ex, draw, e["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=color, min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2560,9 +2560,9 @@ def render_c4(ex, draw, spec, plan):
         draw_line(ex, draw, r["_points"], THEME["white"], 1.5, r["_style"], "open")
         label = r["label"] + (f" [{r['technology']}]" if r["technology"] else "")
         if label:
-            mx, my, _horiz = _edge_label_anchor(r["_points"])
-            draw_text(ex, draw, label, mx - 80, my - 22, 160, 20, 11,
-                      THEME["white"], "center", fit=True, min_size=8)
+            mx, my, horiz = _edge_label_anchor(r["_points"])
+            draw_edge_label(ex, draw, label, mx, my, horiz, lw=160, lh=20, size=11,
+                            color=THEME["white"], min_size=8)
     stereo_of = {"person": "«person»", "system": "«system»", "ext_system": "«external system»",
                  "container": "«container»", "database": "«database»", "queue": "«queue»"}
     for e in c4["elements"]:
@@ -2653,9 +2653,9 @@ def render_bpmn(ex, draw, spec, plan):
         color = THEME["muted"] if f["kind"] == "message" else THEME["white"]
         draw_line(ex, draw, f["_points"], color, 1.5, f["_style"], "open")
         if f["label"]:
-            mx, my, _horiz = _edge_label_anchor(f["_points"])
-            draw_text(ex, draw, f["label"], mx - 60, my - 22, 120, 20, 11,
-                      color, "center", fit=True, min_size=8)
+            mx, my, horiz = _edge_label_anchor(f["_points"])
+            draw_edge_label(ex, draw, f["label"], mx, my, horiz, lw=120, lh=20, size=11,
+                            color=color, min_size=8)
     for e in bp["elements"]:
         x, y, w, h = e["_box"]
         accent = THEME.get(e["_accent"], THEME["green"])
