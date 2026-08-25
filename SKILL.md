@@ -108,6 +108,7 @@ Four formal styles, all first-class — no neon, no grit, designed for professio
 - `report`: light corporate (consulting/PPT-style) — clean white canvas, enterprise blue, printable, traveling-dot flow animation. Best for executive briefings, business proposals, whitepapers.
 - `academic`: light academic — white canvas, black ink, a single deep-ink-blue accent, minimal fills. Best for papers, textbooks, UML, RFCs.
 - `blueprint`: dark engineering — deep indigo canvas, white structure lines + cyan accent. Best for system design, network topology, C4, deployment.
+- `custom`: a brand theme loaded from spec `theme_file` or a `.diagramforge` project marker (`theme: <slug>` → `~/.diagramforge/themes/<slug>.json`). Generate one from a website with `scripts/onboard_brand.py --url <site>`; full flow, validation rules (exact key set, WCAG contrast floors), and the customization-persistence promise live in `references/branding.md`. Missing or invalid theme sources fail explicitly — never a silent fallback.
 
 Styles control the full palette and finish. Use `--style` to override the spec. Any other style name fails validation.
 

@@ -7,7 +7,8 @@ Use this reference when authoring JSON for `scripts/render_animated_diagram.py`.
 ```json
 {
   "layout": "panorama | swimlane | graph | grid | sequence | er | usecase | class\n            | activity | state | dfd | deployment | component | package\n            | object | composite | profile | communication | timing | interaction\n            | c4 | gantt | bpmn | orgchart | mindmap | timeline | fishbone",
-  "style": "slate | report | academic | blueprint",
+  "style": "slate | report | academic | blueprint | custom",
+  "theme_file": "optional; required for style=custom — theme JSON path relative to this spec",
   "sketch": false,
   "animation": "flow | draw | relay | trace | chapter | failure-recovery",
   "title": {"prefix": "...", "highlight": "...", "subtitle": "..."},
@@ -716,6 +717,16 @@ and is never executed or followed. Imports are capped (<=200 elements,
 <=300 relations/messages, <=200 chars per label, <=2 MB source); exceeding a
 cap fails with a named `resource_limit:<what>` error and exit code 2.
 Simplify or split the source rather than raising the caps.
+
+## Custom themes (style: custom)
+
+`style: "custom"` loads a brand theme JSON: `theme_file` (relative to the
+spec) wins, else a `.diagramforge` marker with `theme: <slug>` resolves
+`~/.diagramforge/themes/<slug>.json`. No source is an explicit error, never a
+silent fallback. Themes must define exactly the renderer's theme keys with
+valid hex and pass WCAG contrast floors (ink 4.5:1, muted 3:1). Generate one
+from a website with `scripts/onboard_brand.py --url <site> --slug <name>`;
+full contract in `references/branding.md`.
 
 ## Copy and quality
 
