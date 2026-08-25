@@ -46,6 +46,14 @@ import re
 import sys
 from pathlib import Path
 
+# Sibling modules must import even when this file is loaded from an arbitrary
+# path (tests, editors), so pin the scripts dir onto sys.path.
+_SCRIPTS_DIR = str(Path(__file__).resolve().parent)
+if _SCRIPTS_DIR not in sys.path:
+    sys.path.insert(0, _SCRIPTS_DIR)
+
+import import_refine
+
 # Resource caps for untrusted sources. Every source label, link, directive, and
 # metadata field is treated as data, never as instructions; these caps keep a
 # hostile or pathological document from exhausting the parser or the renderer.
@@ -1146,7 +1154,7 @@ def _check_string_lengths(value):
             _check_string_lengths(item)
 
 
-def to_spec(text, title=None, style="slate", animation="flow"):
+def to_spec(text, title=None, style="slate", animation="flow", detail="faithful", audience="engineer"):
     if len(text.encode("utf-8")) > MAX_SOURCE_BYTES:
         _fail(2, f"resource_limit:source_bytes — source exceeds {MAX_SOURCE_BYTES} bytes; split the document")
     kind = _diagram_kind(text)
@@ -1170,6 +1178,9 @@ def to_spec(text, title=None, style="slate", animation="flow"):
         spec, notes = _flowchart_to_spec(text, title=title, style=style, animation=animation)
     _check_resource_limits(spec)
     _check_string_lengths(spec)
+    if detail != "faithful" or audience != "engineer":
+        spec, ledger = import_refine.apply_dials(spec, detail=detail, audience=audience)
+        notes = [*notes, *import_refine.format_ledger(ledger)]
     return spec, notes
 
 
@@ -1211,16 +1222,30 @@ def main():
     parser.add_argument("input", help="Mermaid file path, or '-' for stdin.")
     parser.add_argument("--out", default=None, help="Write spec JSON here (default: stdout).")
     parser.add_argument("--title", default=None, help="Title prefix for the imported diagram.")
-    parser.add_argument("--style", choices=["slate", "report", "academic", "blueprint"], default="slate")
+    parser.add_argument("--style", choices=["slate", "report", "academic", "blueprint", "custom"], default="slate")
     parser.add_argument("--animation", default="flow",
                         help="Animation preset (default flow).")
+    parser.add_argument("--detail", choices=import_refine.DETAIL_CHOICES, default="faithful",
+                        help="How much of the source survives: faithful (<=24 nodes), balanced (<=12), "
+                             "simplified (<=7). Reduction follows a fixed degrade ladder and is reported "
+                             "in the fidelity ledger.")
+    parser.add_argument("--audience", choices=import_refine.AUDIENCE_CHOICES, default="engineer",
+                        help="Wording, not count: engineer keeps technical sublabels, mixed strips "
+                             "ports/schemes, executive drops protocol jargon and caps label length.")
+    parser.add_argument("--size", choices=["article", "wide", "square", "story"], default=None,
+                        help="Canvas preset for the output (maps to spec canvas.preset).")
     args = parser.parse_args()
 
     text = sys.stdin.read() if args.input == "-" else Path(args.input).read_text(encoding="utf-8")
-    spec, notes = to_spec(text, title=args.title, style=args.style, animation=args.animation)
+    spec, notes = to_spec(text, title=args.title, style=args.style, animation=args.animation,
+                          detail=args.detail, audience=args.audience)
+    if args.size:
+        spec.setdefault("canvas", {})["preset"] = args.size
     payload = json.dumps(spec, ensure_ascii=False, indent=2)
     if args.out:
-        Path(args.out).write_text(payload, encoding="utf-8")
+        out_path = Path(args.out)
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(payload, encoding="utf-8")
         if spec["layout"] == "sequence":
             summary = {"participants": len(spec["participants"]), "messages": len(spec["messages"])}
         elif spec["layout"] == "er":

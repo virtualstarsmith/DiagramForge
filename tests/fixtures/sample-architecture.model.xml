@@ -1,0 +1,12 @@
+<mxGraphModel><root><mxCell id="0"/><mxCell id="1" parent="0"/>
+<mxCell id="vpc" value="AWS VPC" vertex="1" parent="1"/>
+<mxCell id="web" value="Web App" vertex="1" parent="1"/>
+<mxCell id="gw" value="API Gateway :8443" vertex="1" parent="vpc"/>
+<mxCell id="svc" value="Auth Service JWT · RS256" vertex="1" parent="vpc"/>
+<mxCell id="worker" value="Report Worker" vertex="1" parent="vpc"/>
+<mxCell id="db" value="Postgres" vertex="1" parent="1"/>
+<mxCell id="e1" value="HTTPS :443" edge="1" source="web" target="gw" parent="1"/>
+<mxCell id="e2" value="verify JWT" edge="1" source="gw" target="svc" parent="1"/>
+<mxCell id="e3" value="SQL" edge="1" source="svc" target="db" parent="1"/>
+<mxCell id="e4" value="enqueue" edge="1" source="svc" target="worker" parent="1"/>
+</root></mxGraphModel>

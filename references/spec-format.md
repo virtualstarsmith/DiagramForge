@@ -718,6 +718,23 @@ and is never executed or followed. Imports are capped (<=200 elements,
 cap fails with a named `resource_limit:<what>` error and exit code 2.
 Simplify or split the source rather than raising the caps.
 
+## Importing existing diagrams
+
+`scripts/mermaid_import.py` (Mermaid) and `scripts/drawio_import.py`
+(draw.io / diagrams.net) redraw existing diagrams as DiagramForge specs.
+Redraw, never convert: source coordinates, palettes, and fonts are dropped;
+components, relationships, grouping, and direction are kept.
+
+draw.io containers: `.drawio`, `.drawio.xml`, `.drawio.png` (embedded mxfile),
+`.drawio.svg`; compressed (base64 + DEFLATE) payloads included. Multi-page
+files import page 1 with a note.
+
+Both take the same dials: `--detail faithful|balanced|simplified` (node
+budgets 24/12/7 via a fixed degrade ladder), `--audience
+engineer|mixed|executive` (wording only), `--size article|wide|square|story`
+(canvas preset). Non-faithful imports print a fidelity ledger (merged /
+collapsed / dropped with reasons) in the notes — report it to the user.
+
 ## Custom themes (style: custom)
 
 `style: "custom"` loads a brand theme JSON: `theme_file` (relative to the

@@ -72,6 +72,19 @@ DEFAULT_FPS = 20
 SCALE = 2
 UPDATED = 1782475200000
 
+# Corner-radius scale — the only values card/container corners may take.
+# Geometric pills (terminal nodes, stadium action boxes) and tiny controls
+# (ports, activation bars) keep literal radii; everything else uses these.
+RADIUS_SM = 4      # tags, chips, label masks
+RADIUS_MD = 8      # node boxes
+RADIUS_LG = 12     # cards, containers
+RADIUS_FRAME = 16  # outer chrome frame
+
+# Min visible clearance between an edge label's mask and its connector: the
+# line must stay traceable right up to the label — a label that hides its own
+# arrow is a hard fail.
+EDGE_LABEL_GAP = 8
+
 # ---------------------------------------------------------------------------
 # Visual styles — four formal palettes for professional contexts.
 # Each style MUST list every key in _THEME_KEYS so no hue leaks from another
@@ -654,16 +667,25 @@ class Excal:
         path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
-def draw_text(ex, draw, text, x, y, w, h, size, color=None, align="center", hand=False, bold=False, spacing=3, fit=False, min_size=10, wrap=True):
+def _label_mask(ex, draw, x, y, w, h):
+    """Opaque paper chip behind an edge label, recorded before the text op so
+    the connector never bleeds through the glyphs. Fill and stroke are both
+    the page bg, so the chip itself is invisible — only its knock-out effect
+    on lines beneath is seen."""
+    ops_record({"op": "rect", "x": x, "y": y, "w": w, "h": h, "stroke": THEME["bg"],
+                "fill": THEME["bg"], "width": 1, "radius": RADIUS_SM, "style": "solid",
+                "role": "edge-label-mask"})
+    ex.rect(x, y, w, h, THEME["bg"], THEME["bg"], 1, "solid")
+    draw.rounded_rectangle(scaled_box(x, y, w, h), radius=c(RADIUS_SM), fill=hex_rgba(THEME["bg"]))
+
+
+def draw_text(ex, draw, text, x, y, w, h, size, color=None, align="center", hand=False, bold=False, spacing=3, fit=False, min_size=10, wrap=True, mask=False, role=None):
     color = color or THEME["white"]
     hand = hand and SKETCH  # formal mode keeps every label in the sans face
     if fit:
         text, size, font = fit_text(draw, text, w, h, size, min_size=min_size, hand=hand, bold=bold, spacing=spacing, wrap=wrap)
     else:
         font = load_font(size, hand=hand and not has_cjk(text), cjk=has_cjk(text), bold=bold, text=text)
-    ops_record({"op": "text", "text": str(text), "x": x, "y": y, "w": w, "h": h, "size": size,
-                "color": color, "align": align, "hand": bool(hand), "bold": bool(bold), "spacing": spacing})
-    ex.text(text, x, y, w, h, size, color, align=align)
     tw, th = text_size(draw, text, font, spacing=spacing)
     tx = c(x)
     if align == "center":
@@ -671,6 +693,19 @@ def draw_text(ex, draw, text, x, y, w, h, size, color=None, align="center", hand
     elif align == "right":
         tx = c(x + w) - tw
     ty = c(y) + (c(h) - th) / 2
+    if mask and text:
+        # Snug chip hugging the measured glyphs — not the layout box — so a
+        # generous label box can't erase connectors or bars it only overlaps.
+        pad_x, pad_y = 6, 3
+        _label_mask(ex, draw,
+                    max(0.0, (tx - c(pad_x)) / SCALE), max(0.0, (ty - c(pad_y)) / SCALE),
+                    (tw + 2 * c(pad_x)) / SCALE, (th + 2 * c(pad_y)) / SCALE)
+    op = {"op": "text", "text": str(text), "x": x, "y": y, "w": w, "h": h, "size": size,
+          "color": color, "align": align, "hand": bool(hand), "bold": bool(bold), "spacing": spacing}
+    if role:
+        op["role"] = role
+    ops_record(op)
+    ex.text(text, x, y, w, h, size, color, align=align)
     draw.multiline_text((tx, ty), text, font=font, fill=hex_rgba(color), spacing=c(spacing), align=align)
 
 
@@ -1593,13 +1628,15 @@ def render_swimlane(ex, draw, spec, plan):
         draw_text(ex, draw, spec["subtitle"], 105, 145, 1000, 30, 17, THEME["muted"], "center")
     lanes = plan["lanes"]
     col_w = lanes.get("column_w", 178)
+    # Lane bands + title columns first; step cards are painted last so
+    # connector strokes never run over them (edges-under-nodes, like graph).
     for i, lane in enumerate(lanes["items"]):
         y, lane_h = lane["_y"], lane["_h"]
         tint = lane.get("_tint") or {"stroke": "green", "band": "source_fill", "column": "green_fill"}
         stroke = THEME[tint["stroke"]]
-        draw_rect(ex, draw, lanes["x"], y, lanes["w"], lane_h, stroke, THEME[tint["band"]], 2, 12)
+        draw_rect(ex, draw, lanes["x"], y, lanes["w"], lane_h, stroke, THEME[tint["band"]], 2, RADIUS_LG)
         # Darker title column on the left (reference style), then title + subtitle.
-        draw_rect(ex, draw, lanes["x"], y, col_w, lane_h, stroke, THEME[tint["column"]], 1.5, 12)
+        draw_rect(ex, draw, lanes["x"], y, col_w, lane_h, stroke, THEME[tint["column"]], 1.5, RADIUS_LG)
         title_h = 40 if lane.get("subtitle") else 74
         draw_text(ex, draw, lane.get("title", ""), lanes["x"] + 18, y + (18 if lane.get("subtitle") else 24),
                   col_w - 34, title_h, 22, THEME["white"], "left", hand=True, bold=True, fit=True, min_size=14)
@@ -1610,34 +1647,28 @@ def render_swimlane(ex, draw, spec, plan):
             # Full-width caption row under the step cards (reference-diagram style).
             draw_text(ex, draw, lane["caption"], lanes["x"] + col_w + 20, y + lane_h - 30,
                       lanes["w"] - col_w - 60, 20, 12, THEME["muted"], "center", fit=True, min_size=9)
-        for step in lane.get("steps", []):
-            x, sy, w, h = step["_box"]
-            draw_rect(ex, draw, x, sy, w, h, stroke, THEME["icon_fill"], 1.5, 10)
-            icon(ex, draw, step.get("icon", "file"), x + 9, sy + 15, step.get("color", THEME["cyan"]), **icon_presentation(step))
-            draw_text(ex, draw, step.get("title", ""), x + 66, sy + 10, w - 74, 58, 15, THEME["white"], "left", bold=True, fit=True, min_size=9)
-            if step.get("note"):
-                draw_text(ex, draw, step["note"], x + 2, sy + 84, w - 4, 14, 10,
-                          THEME["muted"], "center", fit=True, min_size=7)
     for edge in plan["edges"]:
         pts = [tuple(p) for p in edge["points"]]
         color = THEME.get(edge.get("color"), THEME["muted"])
         draw_line(ex, draw, pts, color, 2, edge.get("style", "solid"), True)
         if edge.get("label"):
+            align = "center"
             if edge.get("label_pos"):
                 lx, ly, lw = edge["label_pos"]
             else:
                 mx, my, horiz = _edge_label_anchor(pts)
                 if edge.get("loop"):
-                    lw, ly = 260, my - 22
+                    lw, ly = 260, my - 26
                 elif horiz and abs(pts[0][1] - pts[-1][1]) < 4:
                     # Straight in-lane hop: the gap is narrow, so lift the label
                     # into the empty strip above the cards (arrow y = card center).
                     lw, ly = 150, my - 59
                 elif horiz:
-                    lw, ly = 200, my - 22
+                    lw, ly = 200, my - 26
                 else:
-                    lw, ly = 130, my - 11
-                lx = mx - lw / 2
+                    # Vertical run: label sits beside the line, not on it.
+                    lw, ly, align = 120, my - 9, "left"
+                lx = mx + EDGE_LABEL_GAP if align == "left" else mx - lw / 2
             if edge.get("badge"):
                 ly -= 16  # keep the label clear of the numbered badge on the line
             # Keep the label off any step card it would overlap.
@@ -1648,10 +1679,22 @@ def render_swimlane(ex, draw, spec, plan):
                         ly = sy - 24
                         break
             draw_text(ex, draw, edge["label"], lx, ly, lw, 18, 12,
-                      THEME["muted"], "center", fit=True, min_size=9)
+                      THEME["muted"], align, fit=True, min_size=9, mask=True, role="edge-label")
         if edge.get("badge"):
             mx, my, _horiz = _edge_label_anchor(pts)
             draw_edge_badge(ex, draw, edge["badge"], mx, my, color)
+    for lane in lanes["items"]:
+        y = lane["_y"]
+        tint = lane.get("_tint") or {"stroke": "green", "band": "source_fill", "column": "green_fill"}
+        stroke = THEME[tint["stroke"]]
+        for step in lane.get("steps", []):
+            x, sy, w, h = step["_box"]
+            draw_rect(ex, draw, x, sy, w, h, stroke, THEME["icon_fill"], 1.5, RADIUS_MD)
+            icon(ex, draw, step.get("icon", "file"), x + 9, sy + 15, step.get("color", THEME["cyan"]), **icon_presentation(step))
+            draw_text(ex, draw, step.get("title", ""), x + 66, sy + 10, w - 74, 58, 15, THEME["white"], "left", bold=True, fit=True, min_size=9)
+            if step.get("note"):
+                draw_text(ex, draw, step["note"], x + 2, sy + 84, w - 4, 14, 10,
+                          THEME["muted"], "center", fit=True, min_size=7)
     draw_legend(ex, draw, spec, plan)
 
 
@@ -1665,6 +1708,21 @@ def _edge_label_anchor(points):
             best_len = seg
             best = ((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, abs(b[0] - a[0]) >= abs(b[1] - a[1]))
     return best
+
+
+def draw_edge_label(ex, draw, text, mx, my, horiz, lw=120, lh=20, size=12, color=None, min_size=9, dy=0):
+    """Edge label kept off its own connector: centered above a horizontal run,
+    to the right of a vertical run, always with EDGE_LABEL_GAP of visible line
+    between the mask chip and the stroke. Returns the (x, y) used."""
+    color = color or THEME["white"]
+    if horiz:
+        lx, ly, align = mx - lw / 2, my - EDGE_LABEL_GAP - lh + dy, "center"
+    else:
+        lw = min(lw, 120)
+        lx, ly, align = mx + EDGE_LABEL_GAP, my - lh / 2 + dy, "left"
+    draw_text(ex, draw, text, lx, ly, lw, lh, size, color, align, fit=True, min_size=min_size,
+              mask=True, role="edge-label")
+    return lx, ly
 
 
 def draw_edge_badge(ex, draw, badge, mx, my, color):
@@ -1734,12 +1792,9 @@ def render_graph(ex, draw, spec, plan):
         draw_line(ex, draw, pts, color, 2, edge.get("style", "solid"), True)
         if edge.get("label"):
             mx, my, horiz = _edge_label_anchor(pts)
-            lw = 150 if horiz else 130
-            ly = my - 24 if horiz else my - 11
-            if edge.get("badge"):
-                ly -= 16  # keep the label clear of the numbered badge on the line
-            draw_text(ex, draw, edge["label"], mx - lw / 2, ly, lw, 22, 13,
-                      THEME["muted"] if edge.get("loop") else THEME["white"], "center", fit=True, min_size=9)
+            dy = -16 if edge.get("badge") else 0  # keep clear of the badge on the line
+            draw_edge_label(ex, draw, edge["label"], mx, my, horiz, lw=150, lh=22, size=13,
+                            color=THEME["muted"] if edge.get("loop") else THEME["white"], min_size=9, dy=dy)
         if edge.get("badge"):
             mx, my, _horiz = _edge_label_anchor(pts)
             draw_edge_badge(ex, draw, edge["badge"], mx, my, color)

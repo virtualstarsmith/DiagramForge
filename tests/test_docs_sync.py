@@ -65,7 +65,7 @@ LAYOUT_TRIGGERS = {
     "fishbone": ("fishbone", "鱼骨图"),
 }
 
-FEATURE_HOOKS = ("mermaid", "excalidraw", "gif", "mp4", "interactive html", "sketch")
+FEATURE_HOOKS = ("mermaid", "draw.io", "excalidraw", "gif", "mp4", "interactive html", "sketch")
 
 PATH_REF_RE = re.compile(r"`((?:assets|scripts|references|agents)/[^`\s]+?|requirements[\w.-]*\.txt)`")
 MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
