@@ -4,6 +4,7 @@ import bisect
 import json
 import math
 import random
+import re
 import shutil
 import subprocess
 import sys
@@ -24,6 +25,7 @@ if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)  # pragma: no cover
 
 import graph_model
+import theme_loader
 
 try:
     import icon_browser
@@ -198,6 +200,19 @@ def apply_style(name):
     THEME.update(STYLE_THEMES[name])
     FINISH_MODE = STYLE_FINISH.get(name, "dark")
     CURRENT_STYLE = name
+
+
+def apply_custom_theme(theme):
+    """Switch the live THEME palette to a validated custom theme dict.
+
+    The finish mode (dark canvas vs light paper) derives from the theme's bg
+    luminance. Validation already happened in theme_loader before this runs.
+    """
+    global FINISH_MODE, CURRENT_STYLE
+    THEME.clear()
+    THEME.update(theme)
+    FINISH_MODE = theme_loader.finish_mode(theme)
+    CURRENT_STYLE = "custom"
 
 
 def set_sketch(flag):
@@ -2824,6 +2839,7 @@ def render_static_with_ops(spec):
         "style": CURRENT_STYLE,
         "sketch": SKETCH,
         "layout": plan["layout"],
+        "title": spec.get("title", {}) if isinstance(spec.get("title"), dict) else {},
         "bg": THEME["bg"],
         "finish": {
             "mode": FINISH_MODE,
@@ -3393,6 +3409,15 @@ def check_outputs(result, spec):
                 checks.append({"name": "svg_text_outlined", "ok": "<text" not in svg_text and "@font-face" not in svg_text and "<path" in svg_text})
             else:
                 checks.append({"name": "svg_fonts_embedded", "ok": "@font-face" in svg_text and "Excalifont" in svg_text})
+            # Accessible SVG contract: role="img"; aria-labelledby resolving to
+            # this diagram's prefixed <title>/<desc>; <title> as first child.
+            checks.append({"name": "svg_role_img", "ok": 'role="img"' in svg_text})
+            labelledby = re.search(r'aria-labelledby="([^"]+)"', svg_text)
+            checks.append({
+                "name": "svg_accessible_name_resolves",
+                "ok": bool(labelledby) and all(f'id="{ref}"' in svg_text for ref in labelledby.group(1).split()),
+            })
+            checks.append({"name": "svg_title_first_child", "ok": bool(re.search(r"<svg\b[^>]*>\s*<title\b", svg_text))})
 
     if "html" in result:
         html_path = Path(result["html"])
@@ -3523,7 +3548,7 @@ def resolve_custom_icons(spec, spec_dir=None):
 # rendering defaults.
 # Note: density / aspect_ratio / motion_level are accepted for forward
 # compatibility but currently have no rendering effect (reserved no-ops).
-COMMON_SPEC_KEYS = {"layout", "style", "sketch", "animation", "title", "subtitle", "signature", "canvas", "density", "aspect_ratio", "motion_level"}
+COMMON_SPEC_KEYS = {"layout", "style", "sketch", "animation", "title", "subtitle", "signature", "canvas", "density", "aspect_ratio", "motion_level", "theme_file"}
 LAYOUT_SPEC_KEYS = {
     "panorama": COMMON_SPEC_KEYS | {
         "input_title", "input_style", "inputs", "core", "decision", "output", "loop_label", "retry_label",
@@ -3608,8 +3633,21 @@ def validate_spec(spec, spec_dir=None):
         layout = "panorama"
 
     style = spec.get("style", "slate")
-    if style not in STYLE_THEMES:
-        err("$.style", f"unknown style '{style}'", f"use one of: {', '.join(STYLE_THEMES)}")
+    if style not in STYLE_THEMES and style != "custom":
+        err("$.style", f"unknown style '{style}'", f"use one of: {', '.join(STYLE_THEMES)}, or custom")
+    if style == "custom":
+        theme_file = spec.get("theme_file")
+        if theme_file is not None and not isinstance(theme_file, str):
+            err("$.theme_file", "must be a path string", "point it at a theme JSON file")
+        elif isinstance(theme_file, str) and spec_dir is not None and not (Path(spec_dir) / theme_file).is_file():
+            err("$.theme_file", f"theme file not found: {theme_file}",
+                "check the path; relative paths resolve against the spec file's folder")
+        elif theme_file is None and spec_dir is not None and theme_loader.find_marker(spec_dir) is None:
+            err("$.style", "style 'custom' needs a theme source",
+                "set theme_file in the spec, or add a .diagramforge marker containing 'theme: <slug>'")
+        elif theme_file is None and spec_dir is None:
+            warn("$.style", "style 'custom' without theme_file cannot be verified here",
+                 "validate via the CLI with the spec file path so the .diagramforge marker can be found")
     if "sketch" in spec and not isinstance(spec["sketch"], bool):
         err("$.sketch", "must be true or false", "set sketch to true for the hand-drawn look, or drop it for formal output")
     animation = spec.get("animation", "flow")
@@ -5072,9 +5110,9 @@ def main():
     )
     parser.add_argument(
         "--style",
-        choices=list(STYLE_THEMES),
+        choices=[*STYLE_THEMES, "custom"],
         default=None,
-        help="Visual style/palette. Overrides the spec 'style' field. Defaults to the spec value or 'slate'.",
+        help="Visual style/palette. 'custom' reads spec theme_file or a .diagramforge marker. Overrides the spec 'style' field. Defaults to the spec value or 'slate'.",
     )
     parser.add_argument(
         "--sketch",
@@ -5108,7 +5146,10 @@ def main():
     resolve_custom_icons(spec, spec_dir)
 
     style = args.style or spec.get("style", "slate")
-    apply_style(style)
+    if style == "custom":
+        apply_custom_theme(theme_loader.resolve_theme(spec, spec_dir, _THEME_KEYS))
+    else:
+        apply_style(style)
     set_sketch(args.sketch or spec.get("sketch", False))
 
     browser_ready = svg_renderer is not None and svg_renderer.is_available()

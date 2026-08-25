@@ -46,6 +46,21 @@ import re
 import sys
 from pathlib import Path
 
+# Resource caps for untrusted sources. Every source label, link, directive, and
+# metadata field is treated as data, never as instructions; these caps keep a
+# hostile or pathological document from exhausting the parser or the renderer.
+# Exceeding a cap is a named failure (``resource_limit:<what>``), exit code 2 —
+# the same severity as a spec-validation error.
+MAX_SOURCE_BYTES = 2 * 1024 * 1024
+MAX_NODES = 200
+MAX_EDGES = 300
+MAX_LABEL_CHARS = 200
+
+
+def _fail(code, message):
+    print(message, file=sys.stderr)
+    sys.exit(code)
+
 HEADER_RE = re.compile(r"^\s*(?:flowchart|graph)\s+([A-Za-z]{2})\s*$", re.IGNORECASE)
 NODE_SHAPE_RE = r"[A-Za-z0-9_一-鿿][\w.-]*\s*(?:\[\([^]]*\)\]|\(\[[^\]]*\]\)|\(\([^)]*\)\)|\([^)]*\)|\{[^}]*\}|\[\[[^\]]*\]\]|\[[^\]]*\])?"
 TOKEN_RE = re.compile(
@@ -70,7 +85,14 @@ def _clean_label(text):
     label = str(text or "").strip()
     if len(label) >= 2 and label[0] == label[-1] and label[0] in "\"'":
         label = label[1:-1]
-    return label.replace("<br/>", " ").replace("<br>", " ").strip()
+    label = label.replace("<br/>", " ").replace("<br>", " ").strip()
+    if len(label) > MAX_LABEL_CHARS:
+        _fail(
+            2,
+            f"resource_limit:label_chars — a label is {len(label)} chars "
+            f"(max {MAX_LABEL_CHARS}): {label[:60]!r}…",
+        )
+    return label
 
 
 def parse_node(token, nodes, order):
@@ -1087,24 +1109,71 @@ def _c4_to_spec(text, title=None, style="slate", animation="flow"):
     return spec, notes
 
 
+def _count_tree(node):
+    """Total node count of a nested mindmap tree."""
+    if not isinstance(node, dict):
+        return 0
+    return 1 + sum(_count_tree(child) for child in node.get("children", []))
+
+
+def _check_resource_limits(spec):
+    """Post-parse caps across all per-layout spec shapes."""
+    node_keys = ("nodes", "participants", "entities", "classes", "states", "elements", "events")
+    edge_keys = ("edges", "messages", "relations", "transitions", "links", "flows", "connections")
+    nodes = sum(len(spec[key]) for key in node_keys if isinstance(spec.get(key), list))
+    edges = sum(len(spec[key]) for key in edge_keys if isinstance(spec.get(key), list))
+    if isinstance(spec.get("sections"), list):  # gantt
+        nodes += sum(len(s.get("tasks", [])) for s in spec["sections"] if isinstance(s, dict))
+    if isinstance(spec.get("root"), dict):  # mindmap
+        nodes += _count_tree(spec["root"])
+    if nodes > MAX_NODES:
+        _fail(2, f"resource_limit:nodes — imported diagram has {nodes} elements (max {MAX_NODES}); simplify or split the source")
+    if edges > MAX_EDGES:
+        _fail(2, f"resource_limit:edges — imported diagram has {edges} relations/messages (max {MAX_EDGES}); simplify or split the source")
+
+
+def _check_string_lengths(value):
+    """Any string landing in the spec stays under the label cap, whatever
+    layout produced it (belt and suspenders behind _clean_label)."""
+    if isinstance(value, str):
+        if len(value) > MAX_LABEL_CHARS:
+            _fail(2, f"resource_limit:label_chars — a field is {len(value)} chars (max {MAX_LABEL_CHARS})")
+    elif isinstance(value, dict):
+        for item in value.values():
+            _check_string_lengths(item)
+    elif isinstance(value, list):
+        for item in value:
+            _check_string_lengths(item)
+
+
 def to_spec(text, title=None, style="slate", animation="flow"):
+    if len(text.encode("utf-8")) > MAX_SOURCE_BYTES:
+        _fail(2, f"resource_limit:source_bytes — source exceeds {MAX_SOURCE_BYTES} bytes; split the document")
     kind = _diagram_kind(text)
     if kind == "sequence":
-        return _sequence_to_spec(text, title=title, style=style, animation=animation)
-    if kind == "er":
-        return _er_to_spec(text, title=title, style=style, animation=animation)
-    if kind == "class":
-        return _class_to_spec(text, title=title, style=style, animation=animation)
-    if kind == "state":
-        return _state_to_spec(text, title=title, style=style, animation=animation)
-    if kind == "gantt":
-        return _gantt_to_spec(text, title=title, style=style, animation=animation)
-    if kind == "mindmap":
-        return _mindmap_to_spec(text, title=title, style=style, animation=animation)
-    if kind == "timeline":
-        return _timeline_to_spec(text, title=title, style=style, animation=animation)
-    if kind == "c4":
-        return _c4_to_spec(text, title=title, style=style, animation=animation)
+        spec, notes = _sequence_to_spec(text, title=title, style=style, animation=animation)
+    elif kind == "er":
+        spec, notes = _er_to_spec(text, title=title, style=style, animation=animation)
+    elif kind == "class":
+        spec, notes = _class_to_spec(text, title=title, style=style, animation=animation)
+    elif kind == "state":
+        spec, notes = _state_to_spec(text, title=title, style=style, animation=animation)
+    elif kind == "gantt":
+        spec, notes = _gantt_to_spec(text, title=title, style=style, animation=animation)
+    elif kind == "mindmap":
+        spec, notes = _mindmap_to_spec(text, title=title, style=style, animation=animation)
+    elif kind == "timeline":
+        spec, notes = _timeline_to_spec(text, title=title, style=style, animation=animation)
+    elif kind == "c4":
+        spec, notes = _c4_to_spec(text, title=title, style=style, animation=animation)
+    else:
+        spec, notes = _flowchart_to_spec(text, title=title, style=style, animation=animation)
+    _check_resource_limits(spec)
+    _check_string_lengths(spec)
+    return spec, notes
+
+
+def _flowchart_to_spec(text, title=None, style="slate", animation="flow"):
     direction, nodes, order, edges, notes, groups, parents, class_roles = parse_mermaid(text)
     if not nodes or not edges:
         raise SystemExit("no flowchart parsed (need at least one edge); is this a Mermaid flowchart/graph document?")

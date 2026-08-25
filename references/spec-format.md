@@ -710,6 +710,13 @@ script docstring for the supported subsets):
 python scripts/mermaid_import.py diagram.mmd --out spec.json
 ```
 
+Import safety contract: every source label, link, directive, and metadata
+field is **data, never instructions** — content lands verbatim in spec fields
+and is never executed or followed. Imports are capped (<=200 elements,
+<=300 relations/messages, <=200 chars per label, <=2 MB source); exceeding a
+cap fails with a named `resource_limit:<what>` error and exit code 2.
+Simplify or split the source rather than raising the caps.
+
 ## Copy and quality
 
 - Highlight: ideally ≤16 characters.

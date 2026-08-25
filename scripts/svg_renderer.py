@@ -33,6 +33,7 @@ from __future__ import annotations
 
 import base64
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -2320,13 +2321,53 @@ _RENDER_JS = r"""
 })()
 """
 
+def _a11y_slug(text):
+    slug = re.sub(r"[^a-z0-9]+", "-", str(text).lower()).strip("-")
+    return slug or "diagram"
+
+
+def _a11y_meta(doc, basename):
+    """Accessible-name metadata for the serialized SVG.
+
+    Contract: the diagram <svg> carries role="img" and aria-labelledby pointing
+    at <title>/<desc> whose IDs are prefixed with this diagram's slug, so
+    several exported SVGs can be inlined on one page without colliding
+    accessible names. <title> must be the first child (some assistive tech
+    ignores a later one); <desc> states what the diagram shows, not geometry.
+    """
+    title_spec = doc.get("title") if isinstance(doc.get("title"), dict) else {}
+    parts = [str(title_spec.get(key, "")).strip() for key in ("prefix", "highlight")]
+    title = " ".join(part for part in parts if part) or str(basename)
+    desc = f"{doc.get('layout', 'diagram')} diagram: {title}"
+    subtitle = str(title_spec.get("subtitle", "")).strip()
+    if subtitle:
+        desc += f" — {subtitle}"
+    graph = doc.get("graph") or {}
+    nodes = len(graph.get("nodes") or [])
+    edges = len(graph.get("edges") or [])
+    if nodes:
+        desc += f". {nodes} elements" + (f", {edges} connections." if edges else ".")
+    return {"slug": _a11y_slug(basename), "title": title, "desc": desc}
+
+
 _SERIALIZE_JS = r"""
-() => {
+({title, desc, slug}) => {
+  const NS = "http://www.w3.org/2000/svg";
   const svg = document.getElementById("stage").cloneNode(true);
-  svg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-  const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+  svg.setAttribute("xmlns", NS);
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-labelledby", `${slug}-title ${slug}-desc`);
+  const style = document.createElementNS(NS, "style");
   style.textContent = document.getElementById("fonts").textContent;
   svg.insertBefore(style, svg.firstChild);
+  const descEl = document.createElementNS(NS, "desc");
+  descEl.setAttribute("id", `${slug}-desc`);
+  descEl.textContent = desc;
+  svg.insertBefore(descEl, svg.firstChild);
+  const titleEl = document.createElementNS(NS, "title");
+  titleEl.setAttribute("id", `${slug}-title`);
+  titleEl.textContent = title;
+  svg.insertBefore(titleEl, svg.firstChild);
   return new XMLSerializer().serializeToString(svg);
 }
 """
@@ -3131,7 +3172,7 @@ def render_all(doc, outdir: Path, basename: str, animation: str = "flow",
         page = open_page(browser, scale)
 
         if want & {"svg", "html"}:
-            svg_markup = page.evaluate(_SERIALIZE_JS)
+            svg_markup = page.evaluate(_SERIALIZE_JS, _a11y_meta(doc, basename))
             # The interactive HTML always keeps the webfont <style> (browsers
             # render it fine and check_outputs verifies @font-face there), so
             # branch the font handling per output.
