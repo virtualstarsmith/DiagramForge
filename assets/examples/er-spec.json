@@ -1,0 +1,153 @@
+{
+  "layout": "er",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "电商领域",
+    "highlight": "ER 图",
+    "subtitle": "entity / attribute / cardinality 1:1 · 1:N · M:N"
+  },
+  "entities": [
+    {
+      "id": "user",
+      "label": "用户",
+      "accent": "green",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "key": "pk"
+        },
+        {
+          "name": "nickname",
+          "type": "varchar"
+        },
+        {
+          "name": "phone",
+          "type": "varchar"
+        }
+      ]
+    },
+    {
+      "id": "order",
+      "label": "订单",
+      "accent": "amber",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "key": "pk"
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "key": "fk"
+        },
+        {
+          "name": "status",
+          "type": "tinyint"
+        },
+        {
+          "name": "total",
+          "type": "decimal"
+        }
+      ]
+    },
+    {
+      "id": "item",
+      "label": "订单明细",
+      "accent": "cyan",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "key": "pk"
+        },
+        {
+          "name": "order_id",
+          "type": "bigint",
+          "key": "fk"
+        },
+        {
+          "name": "sku_id",
+          "type": "bigint",
+          "key": "fk"
+        },
+        {
+          "name": "qty",
+          "type": "int"
+        }
+      ]
+    },
+    {
+      "id": "sku",
+      "label": "商品 SKU",
+      "accent": "purple",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "key": "pk"
+        },
+        {
+          "name": "title",
+          "type": "varchar"
+        },
+        {
+          "name": "price",
+          "type": "decimal"
+        }
+      ]
+    },
+    {
+      "id": "addr",
+      "label": "收货地址",
+      "accent": "pink",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "bigint",
+          "key": "pk"
+        },
+        {
+          "name": "user_id",
+          "type": "bigint",
+          "key": "fk"
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "from": "user",
+      "to": "order",
+      "label": "下单",
+      "cardinality": "1:N"
+    },
+    {
+      "from": "order",
+      "to": "item",
+      "label": "包含",
+      "cardinality": "1:N"
+    },
+    {
+      "from": "item",
+      "to": "sku",
+      "label": "对应",
+      "cardinality": "N:1"
+    },
+    {
+      "from": "user",
+      "to": "addr",
+      "label": "维护",
+      "cardinality": "1:N"
+    },
+    {
+      "from": "order",
+      "to": "addr",
+      "label": "投递",
+      "cardinality": "M:N"
+    }
+  ],
+  "footer": "PK 主键 · FK 外键 · 关系两端标注基数"
+}

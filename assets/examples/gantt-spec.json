@@ -1,0 +1,72 @@
+{
+  "layout": "gantt",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "2.0 发布计划",
+    "subtitle": "gantt chart"
+  },
+  "sections": [
+    {
+      "label": "设计",
+      "tasks": [
+        {
+          "label": "需求评审",
+          "start": "2026-08-01",
+          "end": "2026-08-04",
+          "kind": "done"
+        },
+        {
+          "label": "交互原型",
+          "start": "2026-08-05",
+          "end": "2026-08-09",
+          "kind": "done"
+        },
+        {
+          "label": "视觉定稿",
+          "start": "2026-08-08",
+          "end": "2026-08-12",
+          "kind": "active"
+        }
+      ]
+    },
+    {
+      "label": "开发",
+      "tasks": [
+        {
+          "label": "渲染引擎",
+          "start": "2026-08-10",
+          "end": "2026-08-22",
+          "kind": "crit"
+        },
+        {
+          "label": "导入器",
+          "start": "2026-08-15",
+          "end": "2026-08-24"
+        },
+        {
+          "label": "联调",
+          "start": "2026-08-23",
+          "end": "2026-08-27"
+        }
+      ]
+    },
+    {
+      "label": "发布",
+      "tasks": [
+        {
+          "label": "灰度",
+          "start": "2026-08-28",
+          "end": "2026-08-30"
+        },
+        {
+          "label": "GA 里程碑",
+          "start": "2026-08-31",
+          "kind": "milestone"
+        }
+      ]
+    }
+  ],
+  "footer": "done 实心灰 / active 绿 / crit 红 / 菱形为里程碑"
+}

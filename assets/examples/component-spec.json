@@ -1,0 +1,80 @@
+{
+  "layout": "component",
+  "style": "blueprint",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "订单服务构件",
+    "subtitle": "UML component diagram"
+  },
+  "components": [
+    {
+      "id": "web",
+      "label": " storefront Web",
+      "body": "React SPA"
+    },
+    {
+      "id": "order",
+      "label": "OrderService",
+      "body": "订单聚合 / 状态机"
+    },
+    {
+      "id": "pay",
+      "label": "PaymentService"
+    },
+    {
+      "id": "stock",
+      "label": "StockService"
+    }
+  ],
+  "interfaces": [
+    {
+      "id": "ipay",
+      "label": "IPayment",
+      "kind": "provided",
+      "component": "pay"
+    },
+    {
+      "id": "ipay_req",
+      "label": "IPayment",
+      "kind": "required",
+      "component": "order"
+    },
+    {
+      "id": "istock",
+      "label": "IStock",
+      "kind": "provided",
+      "component": "stock"
+    },
+    {
+      "id": "istock_req",
+      "label": "IStock",
+      "kind": "required",
+      "component": "order"
+    }
+  ],
+  "relations": [
+    {
+      "from": "ipay_req",
+      "to": "ipay",
+      "kind": "assembly"
+    },
+    {
+      "from": "istock_req",
+      "to": "istock",
+      "kind": "assembly"
+    },
+    {
+      "from": "web",
+      "to": "order",
+      "kind": "dependency",
+      "label": "REST"
+    },
+    {
+      "from": "order",
+      "to": "pay",
+      "kind": "realization"
+    }
+  ],
+  "footer": "球窝接口为 assembly 装配连接"
+}

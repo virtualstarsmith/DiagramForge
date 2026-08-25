@@ -1,0 +1,194 @@
+{
+  "layout": "swimlane",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "Four types of",
+    "highlight": "Agent Loops",
+    "subtitle": "what triggers a run, and what decides it is done"
+  },
+  "lanes": [
+    {
+      "title": "Turn-Based",
+      "subtitle": "Triggered by: user prompt",
+      "steps": [
+        {
+          "id": "prompt",
+          "title": "User Prompt",
+          "icon": "message"
+        },
+        {
+          "id": "gather",
+          "title": "Gather Context",
+          "icon": "scan"
+        },
+        {
+          "id": "act",
+          "title": "Take Action",
+          "icon": "gear"
+        },
+        {
+          "id": "check",
+          "title": "Check Work",
+          "icon": "check"
+        }
+      ]
+    },
+    {
+      "title": "Goal-Based",
+      "subtitle": "Triggered by: /goal + budget",
+      "steps": [
+        {
+          "id": "goal",
+          "title": "Goal + Budget",
+          "icon": "plan"
+        },
+        {
+          "id": "works",
+          "title": "Agent Works",
+          "icon": "agent"
+        },
+        {
+          "id": "eval",
+          "title": "Evaluator",
+          "icon": "evaluation"
+        },
+        {
+          "id": "ends",
+          "title": "Loop Ends",
+          "icon": "success"
+        }
+      ]
+    },
+    {
+      "title": "Time-Based",
+      "subtitle": "Triggered by: time interval",
+      "steps": [
+        {
+          "id": "tick",
+          "title": "Interval Fires",
+          "icon": "clock"
+        },
+        {
+          "id": "run",
+          "title": "Run Fixed Prompt",
+          "icon": "terminal"
+        },
+        {
+          "id": "wait",
+          "title": "Wait Next Tick",
+          "icon": "wait"
+        }
+      ]
+    },
+    {
+      "title": "Proactive",
+      "subtitle": "Triggered by: events, no human present",
+      "steps": [
+        {
+          "id": "watch",
+          "title": "Watch Channel",
+          "icon": "eye"
+        },
+        {
+          "id": "spawn",
+          "title": "Spawn Workflow",
+          "icon": "orchestrator"
+        },
+        {
+          "id": "fix",
+          "title": "Triage + Fix",
+          "icon": "tool-call"
+        },
+        {
+          "id": "review",
+          "title": "Red-Team Review",
+          "icon": "audit"
+        },
+        {
+          "id": "close",
+          "title": "Task Closed",
+          "icon": "success"
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "prompt",
+      "to": "gather"
+    },
+    {
+      "from": "gather",
+      "to": "act"
+    },
+    {
+      "from": "act",
+      "to": "check"
+    },
+    {
+      "from": "check",
+      "to": "prompt",
+      "label": "user reviews, writes next prompt",
+      "accent": "green"
+    },
+    {
+      "from": "goal",
+      "to": "works"
+    },
+    {
+      "from": "works",
+      "to": "eval",
+      "label": "tries to stop"
+    },
+    {
+      "from": "eval",
+      "to": "ends",
+      "label": "Yes: goal met"
+    },
+    {
+      "from": "eval",
+      "to": "works",
+      "label": "No: sent back to work",
+      "accent": "purple"
+    },
+    {
+      "from": "tick",
+      "to": "run"
+    },
+    {
+      "from": "run",
+      "to": "wait"
+    },
+    {
+      "from": "wait",
+      "to": "tick",
+      "label": "waits for next interval",
+      "accent": "green"
+    },
+    {
+      "from": "watch",
+      "to": "spawn"
+    },
+    {
+      "from": "spawn",
+      "to": "fix"
+    },
+    {
+      "from": "fix",
+      "to": "review"
+    },
+    {
+      "from": "review",
+      "to": "close",
+      "label": "goal met, exits"
+    },
+    {
+      "from": "close",
+      "to": "watch",
+      "label": "routine runs until turned off",
+      "accent": "purple"
+    }
+  ],
+  "footer": "each type hands one more job to the system: checking, triggering, then both"
+}

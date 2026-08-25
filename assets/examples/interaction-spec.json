@@ -1,0 +1,71 @@
+{
+  "layout": "interaction",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "购物流程总览",
+    "subtitle": "UML interaction overview"
+  },
+  "nodes": [
+    {
+      "id": "browse",
+      "label": "浏览商品",
+      "kind": "interaction"
+    },
+    {
+      "id": "gate",
+      "label": "登录?",
+      "kind": "decision"
+    },
+    {
+      "id": "login",
+      "label": "用户登录",
+      "kind": "interaction"
+    },
+    {
+      "id": "order",
+      "label": "创建订单",
+      "kind": "interaction"
+    },
+    {
+      "id": "pay",
+      "label": "支付",
+      "kind": "interaction",
+      "ref": "ref"
+    },
+    {
+      "id": "done",
+      "kind": "final"
+    }
+  ],
+  "edges": [
+    {
+      "from": "browse",
+      "to": "gate"
+    },
+    {
+      "from": "gate",
+      "to": "login",
+      "label": "否"
+    },
+    {
+      "from": "login",
+      "to": "order"
+    },
+    {
+      "from": "gate",
+      "to": "order",
+      "label": "是"
+    },
+    {
+      "from": "order",
+      "to": "pay"
+    },
+    {
+      "from": "pay",
+      "to": "done"
+    }
+  ],
+  "footer": "每个 sd/ref 框引用一张子交互图"
+}

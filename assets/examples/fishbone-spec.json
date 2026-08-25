@@ -1,0 +1,55 @@
+{
+  "layout": "fishbone",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "线上故障归因",
+    "subtitle": "fishbone / ishikawa"
+  },
+  "problem": "大促接口超时率 3%",
+  "categories": [
+    {
+      "label": "机器",
+      "causes": [
+        "CPU 打满",
+        "GC 频繁",
+        "网卡打满"
+      ]
+    },
+    {
+      "label": "方法",
+      "causes": [
+        "慢 SQL",
+        "无批量接口"
+      ]
+    },
+    {
+      "label": "材料",
+      "causes": [
+        "缓存穿透"
+      ]
+    },
+    {
+      "label": "人员",
+      "causes": [
+        "预案不熟",
+        "值班响应慢"
+      ]
+    },
+    {
+      "label": "测量",
+      "causes": [
+        "监控粒度粗"
+      ]
+    },
+    {
+      "label": "环境",
+      "causes": [
+        "机房抖动",
+        "CDN 回源"
+      ]
+    }
+  ],
+  "footer": "因果沿 55° 斜骨分布，鱼头为问题"
+}

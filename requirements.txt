@@ -1,0 +1,11 @@
+Pillow>=11.0.0
+svg.path>=7.0
+fonttools>=4.51
+
+# Optional: the high-quality animated icon engine (headless Chromium).
+# Install with:  pip install -r requirements-browser.txt && python -m playwright install chromium
+# Without it, the renderer automatically falls back to the pure-Pillow icon path.
+
+# Optional system tools (not pip-installable):
+#   ffmpeg  — MP4 encoding + optimized GIF palette generation
+#   gifsicle — extra GIF LZW optimization (ffmpeg covers most cases)

@@ -1,0 +1,56 @@
+{
+  "layout": "orgchart",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "研发中心架构",
+    "subtitle": "org chart"
+  },
+  "nodes": [
+    {
+      "id": "vp",
+      "label": "研发 VP",
+      "role": "技术委员会"
+    },
+    {
+      "id": "plat",
+      "label": "平台部",
+      "role": "12 人",
+      "parent": "vp"
+    },
+    {
+      "id": "biz",
+      "label": "业务部",
+      "role": "18 人",
+      "parent": "vp"
+    },
+    {
+      "id": "qa",
+      "label": "质量部",
+      "role": "6 人",
+      "parent": "vp"
+    },
+    {
+      "id": "backend",
+      "label": "后端组",
+      "parent": "plat"
+    },
+    {
+      "id": "infra",
+      "label": "基础架构组",
+      "parent": "plat"
+    },
+    {
+      "id": "app",
+      "label": "App 组",
+      "parent": "biz"
+    },
+    {
+      "id": "growth",
+      "label": "增长组",
+      "parent": "biz"
+    }
+  ],
+  "footer": "parent 指向直属上级，支持多根"
+}

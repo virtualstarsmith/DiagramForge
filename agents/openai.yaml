@@ -1,0 +1,5 @@
+interface:
+  display_name: "DiagramForge"
+  short_description: "Business-formal animated architecture, swimlane, graph, and UML (sequence/ER/use-case/class/activity/state/DFD) diagrams in slate, report, academic, or blueprint styles, with an optional hand-drawn sketch mode"
+  brand_color: "#3B82F6"
+  default_prompt: "Use $diagramforge to choose the best layout and turn this architecture or process into a verified formal diagram (add sketch mode only if I ask for hand-drawn) with editable and publishing outputs."

@@ -1,0 +1,114 @@
+{
+  "layout": "activity",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "订单履约",
+    "highlight": "活动图",
+    "subtitle": "UML activity: 起点/终点 · 判定 · fork/join 并发"
+  },
+  "direction": "down",
+  "nodes": [
+    {
+      "id": "start",
+      "kind": "initial"
+    },
+    {
+      "id": "check",
+      "label": "校验订单",
+      "kind": "action",
+      "accent": "amber"
+    },
+    {
+      "id": "valid",
+      "label": "校验通过?",
+      "kind": "decision"
+    },
+    {
+      "id": "fix",
+      "label": "驳回并通知",
+      "kind": "action",
+      "accent": "pink"
+    },
+    {
+      "id": "fork",
+      "kind": "fork"
+    },
+    {
+      "id": "pick",
+      "label": "仓库拣货",
+      "kind": "action",
+      "accent": "cyan"
+    },
+    {
+      "id": "invoice",
+      "label": "开具发票",
+      "kind": "action",
+      "accent": "purple"
+    },
+    {
+      "id": "join",
+      "kind": "join"
+    },
+    {
+      "id": "ship",
+      "label": "发货出库",
+      "kind": "action",
+      "accent": "green"
+    },
+    {
+      "id": "end",
+      "kind": "final"
+    }
+  ],
+  "edges": [
+    {
+      "from": "start",
+      "to": "check"
+    },
+    {
+      "from": "check",
+      "to": "valid"
+    },
+    {
+      "from": "valid",
+      "to": "fork",
+      "label": "是"
+    },
+    {
+      "from": "valid",
+      "to": "fix",
+      "label": "否"
+    },
+    {
+      "from": "fix",
+      "to": "check",
+      "label": "修改后重提"
+    },
+    {
+      "from": "fork",
+      "to": "pick"
+    },
+    {
+      "from": "fork",
+      "to": "invoice"
+    },
+    {
+      "from": "pick",
+      "to": "join"
+    },
+    {
+      "from": "invoice",
+      "to": "join"
+    },
+    {
+      "from": "join",
+      "to": "ship"
+    },
+    {
+      "from": "ship",
+      "to": "end"
+    }
+  ],
+  "footer": "圆角矩形 = 动作 · 菱形 = 判定 · 粗横条 = 并发同步 · 虚线 = 回流"
+}

@@ -1,0 +1,71 @@
+{
+  "layout": "communication",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "下单协作",
+    "subtitle": "UML communication diagram"
+  },
+  "objects": [
+    {
+      "id": "page",
+      "label": "下单页 : OrderPage"
+    },
+    {
+      "id": "ctrl",
+      "label": ": OrderController"
+    },
+    {
+      "id": "svc",
+      "label": ": OrderService"
+    },
+    {
+      "id": "stock",
+      "label": ": StockClient"
+    }
+  ],
+  "links": [
+    {
+      "from": "page",
+      "to": "ctrl",
+      "messages": [
+        {
+          "num": "1",
+          "label": "submit(order)"
+        }
+      ]
+    },
+    {
+      "from": "ctrl",
+      "to": "svc",
+      "messages": [
+        {
+          "num": "1.1",
+          "label": "create(order)"
+        },
+        {
+          "num": "1.2",
+          "label": "orderId",
+          "dir": "back"
+        }
+      ]
+    },
+    {
+      "from": "svc",
+      "to": "stock",
+      "messages": [
+        {
+          "num": "1.1.1",
+          "label": "reserve(sku)"
+        },
+        {
+          "num": "1.1.2",
+          "label": "ack",
+          "dir": "back"
+        }
+      ]
+    }
+  ],
+  "footer": "消息按 num 编号沿链排列，小箭头指示方向"
+}

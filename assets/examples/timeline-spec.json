@@ -1,0 +1,40 @@
+{
+  "layout": "timeline",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "产品演进路线",
+    "subtitle": "timeline"
+  },
+  "events": [
+    {
+      "label": "立项",
+      "time": "2025 Q1",
+      "detail": "3 人小队"
+    },
+    {
+      "label": "MVP 内测",
+      "time": "2025 Q2"
+    },
+    {
+      "label": "公测",
+      "time": "2025 Q4",
+      "detail": "种子用户 1k"
+    },
+    {
+      "label": "1.0 GA",
+      "time": "2026 Q1"
+    },
+    {
+      "label": "插件市场",
+      "time": "2026 Q3"
+    },
+    {
+      "label": "2.0",
+      "time": "2026 Q4",
+      "detail": "26 种图布局"
+    }
+  ],
+  "footer": "side 可强制 above/below，默认上下交替"
+}

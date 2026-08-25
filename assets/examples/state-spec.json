@@ -1,0 +1,78 @@
+{
+  "layout": "state",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "订单生命周期",
+    "highlight": "状态机",
+    "subtitle": "UML state: 初始/终止 · 迁移事件 [守卫] / 动作"
+  },
+  "states": [
+    {
+      "id": "start",
+      "kind": "initial"
+    },
+    {
+      "id": "created",
+      "label": "已创建",
+      "accent": "amber",
+      "body": "entry / 冻结库存"
+    },
+    {
+      "id": "paid",
+      "label": "已支付",
+      "accent": "cyan",
+      "body": "entry / 扣减库存\ndo / 触发开票"
+    },
+    {
+      "id": "shipped",
+      "label": "已发货",
+      "accent": "green"
+    },
+    {
+      "id": "closed",
+      "label": "已关闭",
+      "accent": "muted"
+    },
+    {
+      "id": "end",
+      "kind": "final"
+    }
+  ],
+  "transitions": [
+    {
+      "from": "start",
+      "to": "created"
+    },
+    {
+      "from": "created",
+      "to": "paid",
+      "label": "支付成功 [库存充足] / 核销"
+    },
+    {
+      "from": "paid",
+      "to": "shipped",
+      "label": "出库完成"
+    },
+    {
+      "from": "shipped",
+      "to": "closed",
+      "label": "确认收货"
+    },
+    {
+      "from": "created",
+      "to": "closed",
+      "label": "超时未支付"
+    },
+    {
+      "from": "paid",
+      "to": "created",
+      "label": "退款审核通过"
+    },
+    {
+      "from": "closed",
+      "to": "end"
+    }
+  ],
+  "footer": "虚线 = 回退迁移 · 状态内文字 = entry / do 活动"
+}

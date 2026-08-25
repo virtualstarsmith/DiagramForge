@@ -1,0 +1,72 @@
+{
+  "layout": "mindmap",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "系统分析师地图",
+    "subtitle": "mindmap"
+  },
+  "root": {
+    "label": "系统分析师",
+    "children": [
+      {
+        "label": "需求工程",
+        "children": [
+          {
+            "label": "访谈"
+          },
+          {
+            "label": "用例建模"
+          },
+          {
+            "label": "原型"
+          }
+        ]
+      },
+      {
+        "label": "结构化分析",
+        "children": [
+          {
+            "label": "DFD"
+          },
+          {
+            "label": "ERD"
+          },
+          {
+            "label": "数据字典"
+          }
+        ]
+      },
+      {
+        "label": "面向对象",
+        "children": [
+          {
+            "label": "类图"
+          },
+          {
+            "label": "时序图"
+          },
+          {
+            "label": "状态机"
+          }
+        ]
+      },
+      {
+        "label": "架构设计",
+        "children": [
+          {
+            "label": "C4"
+          },
+          {
+            "label": "部署图"
+          }
+        ]
+      },
+      {
+        "label": "沟通推进"
+      }
+    ]
+  },
+  "footer": "扇区大小按叶子数量分配"
+}

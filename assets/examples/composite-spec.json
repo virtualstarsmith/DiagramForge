@@ -1,0 +1,60 @@
+{
+  "layout": "composite",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "搜索引擎内部",
+    "subtitle": "UML composite structure"
+  },
+  "classifier": "SearchEngine",
+  "parts": [
+    {
+      "id": "crawler",
+      "label": "crawler",
+      "type": "Crawler"
+    },
+    {
+      "id": "indexer",
+      "label": "indexer",
+      "type": "Indexer"
+    },
+    {
+      "id": "ranker",
+      "label": "ranker",
+      "type": "Ranker"
+    }
+  ],
+  "ports": [
+    {
+      "id": "p_crawl",
+      "part": "crawler",
+      "side": "right",
+      "label": "pages"
+    },
+    {
+      "id": "p_index",
+      "part": "indexer",
+      "side": "left",
+      "label": "docs"
+    },
+    {
+      "id": "p_query",
+      "part": "ranker",
+      "side": "top",
+      "label": "query"
+    }
+  ],
+  "connectors": [
+    {
+      "from": "p_crawl",
+      "to": "p_index"
+    },
+    {
+      "from": "indexer",
+      "to": "ranker",
+      "label": "inverted index"
+    }
+  ],
+  "footer": "小方块为 port，挂在 part 边缘"
+}

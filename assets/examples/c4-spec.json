@@ -1,0 +1,97 @@
+{
+  "layout": "c4",
+  "style": "blueprint",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "电商 C4 容器图",
+    "subtitle": "C4 container diagram"
+  },
+  "boundaries": [
+    {
+      "id": "biz",
+      "label": "电商系统边界"
+    }
+  ],
+  "elements": [
+    {
+      "id": "user",
+      "label": "买家",
+      "kind": "person"
+    },
+    {
+      "id": "web",
+      "label": "商城 Web",
+      "kind": "container",
+      "technology": "React",
+      "boundary": "biz"
+    },
+    {
+      "id": "bff",
+      "label": "BFF 网关",
+      "kind": "container",
+      "technology": "Node.js",
+      "boundary": "biz"
+    },
+    {
+      "id": "order",
+      "label": "订单服务",
+      "kind": "container",
+      "technology": "Go",
+      "boundary": "biz"
+    },
+    {
+      "id": "db",
+      "label": "订单库",
+      "kind": "database",
+      "technology": "PostgreSQL",
+      "boundary": "biz"
+    },
+    {
+      "id": "mq",
+      "label": "事件总线",
+      "kind": "queue",
+      "technology": "Kafka",
+      "boundary": "biz"
+    },
+    {
+      "id": "pay",
+      "label": "支付平台",
+      "kind": "ext_system"
+    }
+  ],
+  "relations": [
+    {
+      "from": "user",
+      "to": "web",
+      "label": "浏览 / 下单"
+    },
+    {
+      "from": "web",
+      "to": "bff",
+      "label": "HTTPS"
+    },
+    {
+      "from": "bff",
+      "to": "order",
+      "label": "gRPC"
+    },
+    {
+      "from": "order",
+      "to": "db",
+      "label": "读写"
+    },
+    {
+      "from": "order",
+      "to": "mq",
+      "label": "OrderCreated"
+    },
+    {
+      "from": "order",
+      "to": "pay",
+      "label": "发起扣款",
+      "style": "dashed"
+    }
+  ],
+  "footer": "虚线框为系统边界，圆柱为 database"
+}

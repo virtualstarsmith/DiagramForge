@@ -1,0 +1,102 @@
+{
+  "layout": "timing",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "缓存双删时序",
+    "subtitle": "UML timing diagram"
+  },
+  "lifelines": [
+    {
+      "id": "web",
+      "label": "Web 服务",
+      "states": [
+        "空闲",
+        "写库",
+        "删缓存"
+      ],
+      "events": [
+        {
+          "t": 0,
+          "state": "空闲"
+        },
+        {
+          "t": 1,
+          "state": "写库"
+        },
+        {
+          "t": 3,
+          "state": "空闲"
+        },
+        {
+          "t": 5,
+          "state": "删缓存"
+        },
+        {
+          "t": 6,
+          "state": "空闲"
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "label": "MySQL",
+      "states": [
+        "闲",
+        "写入"
+      ],
+      "events": [
+        {
+          "t": 0,
+          "state": "闲"
+        },
+        {
+          "t": 1.2,
+          "state": "写入"
+        },
+        {
+          "t": 2.8,
+          "state": "闲"
+        }
+      ]
+    },
+    {
+      "id": "cache",
+      "label": "Redis",
+      "states": [
+        "有效",
+        "失效"
+      ],
+      "events": [
+        {
+          "t": 0,
+          "state": "有效"
+        },
+        {
+          "t": 5.2,
+          "state": "失效"
+        },
+        {
+          "t": 8,
+          "state": "有效"
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "from": "web",
+      "to": "db",
+      "t": 1.2,
+      "label": "UPDATE"
+    },
+    {
+      "from": "web",
+      "to": "cache",
+      "t": 5.2,
+      "label": "DEL"
+    }
+  ],
+  "footer": "阶梯线为状态随时间变化，虚线为生命线间消息"
+}

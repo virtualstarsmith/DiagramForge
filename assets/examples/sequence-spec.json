@@ -1,0 +1,132 @@
+{
+  "layout": "sequence",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "下单链路",
+    "highlight": "时序图",
+    "subtitle": "UML sequence: sync / async / return / self + alt & loop fragments"
+  },
+  "participants": [
+    {
+      "id": "user",
+      "label": "用户",
+      "kind": "actor",
+      "icon": "user",
+      "accent": "green"
+    },
+    {
+      "id": "gateway",
+      "label": "API 网关",
+      "icon": "api",
+      "accent": "purple"
+    },
+    {
+      "id": "order",
+      "label": "订单服务",
+      "icon": "package",
+      "accent": "amber"
+    },
+    {
+      "id": "stock",
+      "label": "库存服务",
+      "icon": "db",
+      "accent": "cyan"
+    },
+    {
+      "id": "mq",
+      "label": "消息队列",
+      "icon": "queue",
+      "accent": "pink"
+    }
+  ],
+  "messages": [
+    {
+      "from": "user",
+      "to": "gateway",
+      "label": "提交订单",
+      "kind": "sync"
+    },
+    {
+      "from": "gateway",
+      "to": "order",
+      "label": "创建订单",
+      "kind": "sync"
+    },
+    {
+      "kind": "note",
+      "target": [
+        "order",
+        "stock"
+      ],
+      "text": "幂等键 = 订单号"
+    },
+    {
+      "from": "order",
+      "to": "stock",
+      "label": "扣减库存",
+      "kind": "sync"
+    },
+    {
+      "from": "stock",
+      "to": "order",
+      "label": "扣减成功",
+      "kind": "return"
+    },
+    {
+      "from": "stock",
+      "to": "order",
+      "label": "库存不足",
+      "kind": "return"
+    },
+    {
+      "from": "order",
+      "to": "order",
+      "label": "状态机推进",
+      "kind": "self"
+    },
+    {
+      "from": "order",
+      "to": "mq",
+      "label": "订单已创建事件",
+      "kind": "async"
+    },
+    {
+      "from": "order",
+      "to": "gateway",
+      "label": "订单号",
+      "kind": "return"
+    },
+    {
+      "from": "gateway",
+      "to": "user",
+      "label": "展示结果",
+      "kind": "return"
+    }
+  ],
+  "fragments": [
+    {
+      "kind": "alt",
+      "label": "库存充足",
+      "range": [
+        3,
+        5
+      ],
+      "dividers": [
+        {
+          "at": 5,
+          "label": "库存不足，走补货流程"
+        }
+      ]
+    },
+    {
+      "kind": "loop",
+      "label": "重试 ≤ 3 次",
+      "range": [
+        6,
+        6
+      ]
+    }
+  ],
+  "footer": "sync 实心箭头 · async/return 开放箭头 · return 虚线 · alt/loop 组合片段"
+}

@@ -1,0 +1,168 @@
+{
+  "layout": "class",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "订单域",
+    "highlight": "类图",
+    "subtitle": "inheritance · realization · composition · aggregation · association"
+  },
+  "classes": [
+    {
+      "id": "order",
+      "label": "Order",
+      "accent": "amber",
+      "attributes": [
+        {
+          "name": "id",
+          "type": "Long",
+          "visibility": "-"
+        },
+        {
+          "name": "status",
+          "type": "OrderStatus",
+          "visibility": "-"
+        }
+      ],
+      "methods": [
+        {
+          "name": "create()",
+          "type": "void",
+          "visibility": "+"
+        },
+        {
+          "name": "cancel()",
+          "type": "boolean",
+          "visibility": "+"
+        }
+      ]
+    },
+    {
+      "id": "item",
+      "label": "OrderItem",
+      "accent": "cyan",
+      "attributes": [
+        {
+          "name": "skuId",
+          "type": "Long",
+          "visibility": "-"
+        },
+        {
+          "name": "qty",
+          "type": "int",
+          "visibility": "-"
+        }
+      ]
+    },
+    {
+      "id": "repo",
+      "label": "OrderRepository",
+      "kind": "interface",
+      "accent": "purple",
+      "methods": [
+        {
+          "name": "save(order)",
+          "type": "void",
+          "visibility": "+"
+        },
+        {
+          "name": "findById(id)",
+          "type": "Order",
+          "visibility": "+"
+        }
+      ]
+    },
+    {
+      "id": "repo_impl",
+      "label": "MysqlOrderRepository",
+      "accent": "green",
+      "methods": [
+        {
+          "name": "save(order)",
+          "type": "void",
+          "visibility": "+"
+        }
+      ]
+    },
+    {
+      "id": "vip",
+      "label": "VipOrder",
+      "accent": "pink",
+      "methods": [
+        {
+          "name": "applyDiscount()",
+          "type": "void",
+          "visibility": "+"
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "label": "OrderStatus",
+      "kind": "enum",
+      "accent": "core_stroke",
+      "attributes": [
+        {
+          "name": "CREATED"
+        },
+        {
+          "name": "PAID"
+        },
+        {
+          "name": "CLOSED"
+        }
+      ]
+    },
+    {
+      "id": "coupon",
+      "label": "Coupon",
+      "accent": "amber",
+      "attributes": [
+        {
+          "name": "code",
+          "type": "String",
+          "visibility": "-"
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "from": "order",
+      "to": "item",
+      "kind": "composition",
+      "label": "包含",
+      "from_card": "1",
+      "to_card": "1..*"
+    },
+    {
+      "from": "vip",
+      "to": "order",
+      "kind": "inheritance"
+    },
+    {
+      "from": "repo_impl",
+      "to": "repo",
+      "kind": "realization"
+    },
+    {
+      "from": "order",
+      "to": "status",
+      "kind": "dependency"
+    },
+    {
+      "from": "order",
+      "to": "coupon",
+      "kind": "aggregation",
+      "label": "使用",
+      "to_card": "0..1"
+    },
+    {
+      "from": "order",
+      "to": "repo",
+      "kind": "association",
+      "label": "持久化"
+    }
+  ],
+  "footer": "空心三角 = 继承/实现 · 实心菱形 = 组合 · 空心菱形 = 聚合"
+}

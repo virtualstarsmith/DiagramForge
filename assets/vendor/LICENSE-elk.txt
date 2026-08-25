@@ -1,0 +1,44 @@
+Eclipse Public License - v 2.0
+
+    THE ACCOMPANYING PROGRAM IS PROVIDED UNDER THE TERMS OF THIS ECLIPSE
+    PUBLIC LICENSE ("AGREEMENT"). ANY USE, REPRODUCTION OR DISTRIBUTION
+    OF THE PROGRAM CONSTITUTES RECIPIENT'S ACCEPTANCE OF THIS AGREEMENT.
+
+elkjs — Eclipse Layout Kernel (JavaScript)
+
+Copyright (c) 2019, 2020 Kiel University and others.
+Source: https://github.com/eclipse/elk
+npm:    elkjs@0.9.3
+
+The Eclipse Public License 2.0 (EPL-2.0) is an OSI-approved license that
+permits use, modification, distribution, and sublicense, provided the
+source is made available and the license terms are preserved. The full
+EPL-2.0 text is available at https://www.eclipse.org/legal/epl-2.0/
+
+A secondary license (GPL-2.0-or-later, "Secondary") is available at the
+recipient's option when the Program is distributed. This bundled copy is
+distributed under the EPL-2.0 terms; the Secondary is not exercised.
+
+Summary of key EPL-2.0 terms:
+
+1. GRANT OF RIGHTS — Each Contributor grants Recipient a non-exclusive,
+   worldwide, royalty-free copyright license to reproduce, prepare derivative
+   works of, publicly display, publicly perform, Distribute and sublicense the
+   Contribution, and a patent license under Licensed Patents to make, use,
+   sell, offer to sell, import and otherwise transfer the Contribution.
+
+2. DISTRIBUTION REQUIREMENTS — When Distributing the Program or a derivative
+   work, the Recipient must (a) make source code available under this
+   Agreement, (b) retain all copyright/permission/attribution notices, and
+   (c) include a copy of this Agreement.
+
+3. NO WARRANTY — The Program is provided on an "AS IS" basis, without
+   warranties or conditions of any kind. Each Recipient is solely responsible
+   for determining the appropriateness of using and Distributing the Program.
+
+4. DISCLAIMER OF LIABILITY — Neither Recipient nor any Contributors shall have
+   liability for any direct, indirect, incidental, special, exemplary, or
+   consequential damages arising from the use or distribution of the Program.
+
+The complete legally-binding EPL-2.0 text is at:
+https://www.eclipse.org/legal/epl-2.0/

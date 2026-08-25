@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Coverage data (tests spawn subprocess coverage files)
+.coverage
+.coverage.*
+.coveragerc
+
+# Rendered output scratch area
+out/
+
+# Generated gallery artifacts
+gallery/
+
+# ZCode agent working notes
+.zcode/plans/
+
+# OS noise
+Thumbs.db
+.DS_Store

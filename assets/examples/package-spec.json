@@ -1,0 +1,58 @@
+{
+  "layout": "package",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "后端分层包图",
+    "subtitle": "UML package diagram"
+  },
+  "packages": [
+    {
+      "id": "api",
+      "label": "api 层"
+    },
+    {
+      "id": "domain",
+      "label": "domain 层"
+    },
+    {
+      "id": "model",
+      "label": "model",
+      "parent": "domain"
+    },
+    {
+      "id": "service",
+      "label": "service",
+      "parent": "domain"
+    },
+    {
+      "id": "infra",
+      "label": "infrastructure"
+    },
+    {
+      "id": "repo",
+      "label": "repository",
+      "parent": "infra"
+    }
+  ],
+  "relations": [
+    {
+      "from": "api",
+      "to": "domain",
+      "kind": "import"
+    },
+    {
+      "from": "domain",
+      "to": "infra",
+      "kind": "access"
+    },
+    {
+      "from": "api",
+      "to": "infra",
+      "kind": "dependency",
+      "label": "config"
+    }
+  ],
+  "footer": "子包通过 parent 声明，仅支持一层嵌套"
+}

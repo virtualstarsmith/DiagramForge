@@ -1,0 +1,94 @@
+{
+  "layout": "grid",
+  "style": "slate",
+  "title": {
+    "prefix": "Order platform",
+    "highlight": "capability map",
+    "subtitle": "domain services at a glance"
+  },
+  "columns": 3,
+  "cells": [
+    {
+      "title": "Checkout",
+      "steps": [
+        {
+          "title": "Cart",
+          "icon": "package"
+        },
+        {
+          "title": "Pay",
+          "icon": "card"
+        },
+        {
+          "title": "Confirm",
+          "icon": "check"
+        }
+      ]
+    },
+    {
+      "title": "Catalog",
+      "steps": [
+        {
+          "title": "Search",
+          "icon": "search"
+        },
+        {
+          "title": "Detail",
+          "icon": "file"
+        }
+      ]
+    },
+    {
+      "title": "Inventory",
+      "steps": [
+        {
+          "title": "Reserve",
+          "icon": "db"
+        },
+        {
+          "title": "Release",
+          "icon": "refresh"
+        }
+      ]
+    },
+    {
+      "title": "Shipping",
+      "steps": [
+        {
+          "title": "Label",
+          "icon": "file"
+        },
+        {
+          "title": "Track",
+          "icon": "scan"
+        }
+      ]
+    },
+    {
+      "title": "Accounts",
+      "steps": [
+        {
+          "title": "Login",
+          "icon": "shield"
+        },
+        {
+          "title": "Profile",
+          "icon": "user"
+        }
+      ]
+    },
+    {
+      "title": "Insights",
+      "steps": [
+        {
+          "title": "Collect",
+          "icon": "chart"
+        },
+        {
+          "title": "Report",
+          "icon": "file"
+        }
+      ]
+    }
+  ]
+}

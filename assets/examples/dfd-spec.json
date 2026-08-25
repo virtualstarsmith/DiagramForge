@@ -1,0 +1,88 @@
+{
+  "layout": "dfd",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "订单处理",
+    "highlight": "DFD",
+    "subtitle": "data flow: 外部实体 · 加工 · 数据存储"
+  },
+  "nodes": [
+    {
+      "id": "customer",
+      "label": "顾客",
+      "kind": "external",
+      "accent": "green"
+    },
+    {
+      "id": "p1",
+      "label": "接收订单",
+      "kind": "process",
+      "number": "1.0",
+      "accent": "amber"
+    },
+    {
+      "id": "p2",
+      "label": "履约调度",
+      "kind": "process",
+      "number": "2.0",
+      "accent": "cyan"
+    },
+    {
+      "id": "orders",
+      "label": "订单库",
+      "kind": "store",
+      "accent": "purple"
+    },
+    {
+      "id": "stock",
+      "label": "库存账",
+      "kind": "store",
+      "accent": "pink"
+    },
+    {
+      "id": "logistics",
+      "label": "物流商",
+      "kind": "external",
+      "accent": "green"
+    }
+  ],
+  "flows": [
+    {
+      "from": "customer",
+      "to": "p1",
+      "label": "订单请求"
+    },
+    {
+      "from": "p1",
+      "to": "orders",
+      "label": "订单存档"
+    },
+    {
+      "from": "orders",
+      "to": "p1",
+      "label": "历史订单"
+    },
+    {
+      "from": "p1",
+      "to": "p2",
+      "label": "履约单"
+    },
+    {
+      "from": "p2",
+      "to": "stock",
+      "label": "库存扣减"
+    },
+    {
+      "from": "p2",
+      "to": "logistics",
+      "label": "发货指令"
+    },
+    {
+      "from": "logistics",
+      "to": "customer",
+      "label": "配送"
+    }
+  ],
+  "footer": "圆 = 加工(编号) · 方框 = 外部实体 · 开放框 = 数据存储 · 虚线 = 回流"
+}

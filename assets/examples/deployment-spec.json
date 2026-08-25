@@ -1,0 +1,74 @@
+{
+  "layout": "deployment",
+  "style": "blueprint",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "K8s 生产部署",
+    "subtitle": "UML deployment diagram"
+  },
+  "nodes": [
+    {
+      "id": "cdn",
+      "label": "CDN 边缘节点",
+      "kind": "device"
+    },
+    {
+      "id": "ingress",
+      "label": "Ingress Gateway",
+      "kind": "node"
+    },
+    {
+      "id": "pod",
+      "label": "订单服务 Pod",
+      "kind": "execution",
+      "parent": "ingress"
+    },
+    {
+      "id": "jar",
+      "label": "order-api.jar",
+      "kind": "artifact",
+      "parent": "ingress"
+    },
+    {
+      "id": "sidecar",
+      "label": "envoy sidecar",
+      "kind": "artifact",
+      "parent": "ingress"
+    },
+    {
+      "id": "db",
+      "label": "PostgreSQL 主库",
+      "kind": "device"
+    },
+    {
+      "id": "cache",
+      "label": "Redis 哨兵集群",
+      "kind": "node"
+    }
+  ],
+  "connections": [
+    {
+      "from": "cdn",
+      "to": "ingress",
+      "label": "HTTPS 443"
+    },
+    {
+      "from": "ingress",
+      "to": "db",
+      "label": "JDBC / TLS"
+    },
+    {
+      "from": "ingress",
+      "to": "cache",
+      "label": "RESP"
+    },
+    {
+      "from": "pod",
+      "to": "sidecar",
+      "kind": "dependency",
+      "label": "«manifest»"
+    }
+  ],
+  "footer": "kind: path 为实线通信路径，dependency 为虚线依赖"
+}

@@ -1,0 +1,103 @@
+{
+  "layout": "bpmn",
+  "style": "report",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "订单履约流程",
+    "subtitle": "BPMN core subset"
+  },
+  "pools": [
+    {
+      "label": "电商平台",
+      "lanes": [
+        {
+          "id": "cs",
+          "label": "客服"
+        },
+        {
+          "id": "wms",
+          "label": "仓库"
+        }
+      ]
+    }
+  ],
+  "elements": [
+    {
+      "id": "start",
+      "kind": "start",
+      "lane": "cs",
+      "label": "收到投诉"
+    },
+    {
+      "id": "check",
+      "label": "核实订单",
+      "kind": "task",
+      "lane": "cs"
+    },
+    {
+      "id": "gate",
+      "kind": "gateway",
+      "label": "需补发?",
+      "lane": "cs"
+    },
+    {
+      "id": "refund",
+      "label": "仅退款",
+      "kind": "task",
+      "lane": "cs"
+    },
+    {
+      "id": "pick",
+      "label": "拣货补发",
+      "kind": "task",
+      "lane": "wms"
+    },
+    {
+      "id": "ship",
+      "label": "物流发货",
+      "kind": "task",
+      "lane": "wms"
+    },
+    {
+      "id": "end",
+      "kind": "end",
+      "lane": "cs",
+      "label": "完结"
+    }
+  ],
+  "flows": [
+    {
+      "from": "start",
+      "to": "check"
+    },
+    {
+      "from": "check",
+      "to": "gate"
+    },
+    {
+      "from": "gate",
+      "to": "refund",
+      "label": "否"
+    },
+    {
+      "from": "refund",
+      "to": "end"
+    },
+    {
+      "from": "gate",
+      "to": "pick",
+      "label": "是"
+    },
+    {
+      "from": "pick",
+      "to": "ship"
+    },
+    {
+      "from": "ship",
+      "to": "end",
+      "kind": "message"
+    }
+  ],
+  "footer": "× 排他网关 / + 并行网关；虚线为跨 pool 消息流"
+}

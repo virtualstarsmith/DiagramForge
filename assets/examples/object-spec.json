@@ -1,0 +1,86 @@
+{
+  "layout": "object",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "购物车快照",
+    "subtitle": "UML object diagram"
+  },
+  "objects": [
+    {
+      "id": "o1",
+      "name": "cart42",
+      "class": "Cart",
+      "attributes": [
+        {
+          "name": "total",
+          "value": "¥386.00"
+        },
+        {
+          "name": "status",
+          "value": "PENDING"
+        }
+      ]
+    },
+    {
+      "id": "o2",
+      "name": "item1",
+      "class": "CartItem",
+      "attributes": [
+        {
+          "name": "sku",
+          "value": "KB-87"
+        },
+        {
+          "name": "qty",
+          "value": "1"
+        }
+      ]
+    },
+    {
+      "id": "o3",
+      "name": "item2",
+      "class": "CartItem",
+      "attributes": [
+        {
+          "name": "sku",
+          "value": "MS-20"
+        },
+        {
+          "name": "qty",
+          "value": "2"
+        }
+      ]
+    },
+    {
+      "id": "o4",
+      "name": "vip",
+      "class": "Customer",
+      "attributes": [
+        {
+          "name": "level",
+          "value": "GOLD"
+        }
+      ]
+    }
+  ],
+  "links": [
+    {
+      "from": "o1",
+      "to": "o2",
+      "label": "items"
+    },
+    {
+      "from": "o1",
+      "to": "o3",
+      "label": "items"
+    },
+    {
+      "from": "o1",
+      "to": "o4",
+      "label": "owner"
+    }
+  ],
+  "footer": "实例名带下划线，属性以 = 取值"
+}

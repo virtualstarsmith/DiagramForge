@@ -1,0 +1,60 @@
+{
+  "layout": "profile",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "The internals of",
+    "highlight": "DDD 建模档案",
+    "subtitle": "UML profile diagram"
+  },
+  "stereotypes": [
+    {
+      "id": "entity",
+      "label": "Entity",
+      "attributes": [
+        "table: String",
+        "shardKey: String"
+      ]
+    },
+    {
+      "id": "agg",
+      "label": "AggregateRoot"
+    },
+    {
+      "id": "vo",
+      "label": "ValueObject"
+    }
+  ],
+  "metaclasses": [
+    {
+      "id": "cls",
+      "label": "Class"
+    },
+    {
+      "id": "prop",
+      "label": "Property"
+    }
+  ],
+  "extensions": [
+    {
+      "from": "entity",
+      "to": "cls"
+    },
+    {
+      "from": "agg",
+      "to": "entity"
+    },
+    {
+      "from": "vo",
+      "to": "cls"
+    }
+  ],
+  "relations": [
+    {
+      "from": "entity",
+      "to": "prop",
+      "label": "tags"
+    }
+  ],
+  "footer": "extension 为实心箭头，指向元类"
+}

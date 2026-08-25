@@ -1,0 +1,95 @@
+{
+  "layout": "usecase",
+  "style": "academic",
+  "animation": "flow",
+  "title": {
+    "prefix": "电商系统",
+    "highlight": "用例图",
+    "subtitle": "actor / system boundary / include · extend"
+  },
+  "actors": [
+    {
+      "id": "buyer",
+      "label": "买家"
+    },
+    {
+      "id": "seller",
+      "label": "卖家"
+    },
+    {
+      "id": "admin",
+      "label": "运营"
+    },
+    {
+      "id": "pay",
+      "label": "支付网关",
+      "side": "right"
+    }
+  ],
+  "system": {
+    "label": "电商平台"
+  },
+  "usecases": [
+    {
+      "id": "browse",
+      "label": "浏览商品"
+    },
+    {
+      "id": "buy",
+      "label": "下单"
+    },
+    {
+      "id": "pay_order",
+      "label": "在线支付"
+    },
+    {
+      "id": "refund",
+      "label": "申请退款"
+    },
+    {
+      "id": "shelf",
+      "label": "上架商品"
+    },
+    {
+      "id": "audit",
+      "label": "审核商品"
+    }
+  ],
+  "links": [
+    {
+      "from": "buyer",
+      "to": "browse"
+    },
+    {
+      "from": "buyer",
+      "to": "buy"
+    },
+    {
+      "from": "buyer",
+      "to": "refund"
+    },
+    {
+      "from": "seller",
+      "to": "shelf"
+    },
+    {
+      "from": "admin",
+      "to": "audit"
+    },
+    {
+      "from": "buy",
+      "to": "pay_order",
+      "kind": "include"
+    },
+    {
+      "from": "pay_order",
+      "to": "pay"
+    },
+    {
+      "from": "refund",
+      "to": "buy",
+      "kind": "extend"
+    }
+  ],
+  "footer": "实线 = 参与 · 虚线 «include»/«extend» = 用例包含与扩展"
+}
