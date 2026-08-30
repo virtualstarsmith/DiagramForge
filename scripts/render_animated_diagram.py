@@ -654,12 +654,62 @@ class Excal:
         element["endBinding"] = None
         return element
 
+    def _apply_bindings(self):
+        """Bind arrows to the shapes their endpoints touch, so dragging a node
+        in Excalidraw keeps its connectors attached. Uses the same geometric
+        rule as the draw.io exporter: smallest filled solid shape (>=12px,
+        not paper-colored) whose box, inflated by the attach tolerance, holds
+        the endpoint. Fills in startBinding/endBinding plus the shapes'
+        boundElements — the minimal bookkeeping Excalidraw needs to track
+        connections."""
+        bg = THEME["bg"]
+
+        def is_node(el):
+            if el.get("type") not in ("rectangle", "ellipse", "diamond"):
+                return False
+            fill = el.get("backgroundColor")
+            if not fill or fill == "transparent" or fill == bg:
+                return False
+            if el.get("strokeStyle") != "solid":
+                return False
+            return el["width"] >= 12 and el["height"] >= 12
+
+        nodes = [el for el in self.elements if is_node(el)]
+        for el in nodes:
+            if el.get("boundElements") is None:
+                el["boundElements"] = []
+
+        def bind(px, py):
+            best = None
+            for n in nodes:
+                if (n["x"] - 4) <= px <= (n["x"] + n["width"] + 4) and \
+                        (n["y"] - 4) <= py <= (n["y"] + n["height"] + 4):
+                    if best is None or n["width"] * n["height"] < best["width"] * best["height"]:
+                        best = n
+            return best
+
+        for el in self.elements:
+            if el.get("type") != "arrow":
+                continue
+            pts = el.get("points") or []
+            if len(pts) < 2:
+                continue
+            ends = []
+            for key, p in (("startBinding", pts[0]), ("endBinding", pts[-1])):
+                node = bind(el["x"] + p[0], el["y"] + p[1])
+                el[key] = {"elementId": node["id"], "focus": 0, "gap": 2} if node else None
+                ends.append(node)
+            for node in ends:
+                if node is not None:
+                    node["boundElements"].append({"id": el["id"], "type": "arrow"})
+
     def write(self, path):
         import time
         # Stamp every element with the real export time so the file reflects
         # when it was generated (the legacy module-level constant froze all
         # exports at a single fixed timestamp).
         now_ms = int(time.time() * 1000)
+        self._apply_bindings()
         for el in self.elements:
             el["updated"] = now_ms
         data = {
@@ -3678,12 +3728,21 @@ def check_outputs(result, spec):
         elements = excalidraw.get("elements", [])
         ids = [element.get("id") for element in elements]
         text_elements = [element for element in elements if element.get("type") == "text"]
+        bound_ids = [
+            binding.get("elementId")
+            for element in elements
+            for key in ("startBinding", "endBinding")
+            for binding in [element.get(key)]
+            if binding and binding.get("elementId")
+        ]
         checks.extend(
             [
                 {"name": "excalidraw_exists", "ok": excalidraw_path.is_file()},
                 {"name": "excalidraw_unique_ids", "ok": len(ids) == len(set(ids))},
                 {"name": "excalidraw_text_font_family", "ok": all(element.get("fontFamily") == 5 for element in text_elements)},
                 {"name": "excalidraw_files_empty", "ok": excalidraw.get("files") == {}},
+                {"name": "excalidraw_bindings_resolve", "ok": all(bound in set(ids) for bound in bound_ids),
+                 "bindings": len(bound_ids)},
             ]
         )
 
