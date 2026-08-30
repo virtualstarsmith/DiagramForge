@@ -189,6 +189,7 @@ Optional spec flags that change output:
 - `text_outlines: true` — convert SVG `<text>` to `<path>` glyph outlines so the exported SVG is fully font-independent (renders anywhere, no Excalifont/NotoSansSC install needed, survives `<img>` loading).
 - `fast_capture: true` — capture GIF/MP4 frames in a single in-browser pass (text pre-converted to outlines). Pulls ahead of the default `page.screenshot` loop only at very high frame counts; leave off for normal use.
 - `layout_engine: "elk"` (default) or `"legacy"` — see below.
+- `scenarios: [{name, patch}, ...]` — sibling outputs `<basename>-<name>`: normal / degraded / failure states of one spec (graph, panorama, swimlane, dfd, c4, sequence; contract in `references/spec-format.md`).
 
 Re-rendering an unchanged spec is near-instant: a content hash of the ops document keys an on-disk cache (`<outdir>/.dfcache/`), so unchanged artifacts are reused without launching Chromium.
 

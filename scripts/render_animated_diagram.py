@@ -27,6 +27,7 @@ if _SCRIPTS_DIR not in sys.path:
 import drawio_export
 import graph_model
 import lint_geometry
+import scenarios
 import theme_loader
 
 try:
@@ -3917,6 +3918,12 @@ LAYOUT_SPEC_KEYS = {
     "fishbone": COMMON_SPEC_KEYS | {"problem", "categories", "footer"},
 }
 
+# Scenario variants are a cross-cutting spec feature (see scripts/scenarios.py)
+# allowed only on the layouts the scenario model covers.
+SCENARIO_SPEC_KEYS = {"graph", "panorama", "swimlane", "dfd", "c4", "sequence"}
+for _layout in SCENARIO_SPEC_KEYS:
+    LAYOUT_SPEC_KEYS[_layout] = LAYOUT_SPEC_KEYS[_layout] | {"scenarios"}
+
 
 def validate_spec(spec, spec_dir=None):
     """Pre-flight validation with agent-actionable messages.
@@ -3992,6 +3999,11 @@ def validate_spec(spec, spec_dir=None):
     for key in sorted(set(spec) - LAYOUT_SPEC_KEYS[layout]):
         warn(f"$.{key}", f"unknown key for layout '{layout}' (ignored)",
              f"valid keys: {', '.join(sorted(LAYOUT_SPEC_KEYS[layout]))}")
+
+    if "scenarios" in spec:
+        sc_errors, sc_warnings = scenarios.validate(spec)
+        errors.extend(sc_errors)
+        warnings.extend(sc_warnings)
 
     if len(str(spec.get("signature", ""))) > 28:
         warn("$.signature", "is very long; the brand block will shift far into the title area",
@@ -5530,6 +5542,25 @@ def main():
         result["verification"] = frame_diff_report(result["gif"])
     if args.check:
         result["checks"] = check_outputs(result, spec)
+
+    # Scenario variants: one spec, several states of the same system. Each
+    # variant renders as <basename>-<name> with the same formats; a failing
+    # variant check fails the run exactly like the primary render would.
+    if spec.get("scenarios"):
+        result["scenarios"] = {}
+        for name, variant in scenarios.expand(spec):
+            if renderer == "browser":
+                sres = write_outputs_browser(variant, Path(args.outdir), f"{args.basename}-{name}",
+                                             animation=animation, formats=formats)
+            else:
+                sres = write_outputs(variant, Path(args.outdir), f"{args.basename}-{name}",
+                                     icon_engine=args.icon_engine,
+                                     formats=tuple(f for f in formats if f in {"gif", "png", "excalidraw", "drawio"}))
+                sres["renderer"] = "pillow"
+            if args.check:
+                sres["checks"] = check_outputs(sres, variant)
+            result["scenarios"][name] = sres
+
     print(json.dumps(result, ensure_ascii=False, indent=2))
     if args.strict_formats:
         missing = missing_requested_formats(result, formats)

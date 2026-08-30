@@ -754,6 +754,25 @@ valid hex and pass WCAG contrast floors (ink 4.5:1, muted 3:1). Generate one
 from a website with `scripts/onboard_brand.py --url <site> --slug <name>`;
 full contract in `references/branding.md`.
 
+## Scenario variants (scenarios)
+
+Top-level `scenarios: [{name, patch}, ...]` renders sibling outputs
+`<basename>-<name>` alongside the primary: one spec, the normal / degraded /
+failure states of the same system (d2's scenario-board idea). Available on
+`graph`, `panorama`, `swimlane`, `dfd`, `c4`, and `sequence` layouts; max 4
+scenarios; names are lowercase kebab (`^[a-z0-9][a-z0-9-]{0,23}$`, unique).
+
+A patch is a partial spec merged by identity: item lists match by `id`
+(nodes, participants, entities, classes, states, ...), relation lists match
+by `from` + `to` (edges, transitions, relations, messages, flows,
+connections), dicts deep-merge, scalars replace. `status` sugar maps an item
+to the semantic accent (`degraded` → amber, `failed` → pink); an explicit
+`accent` in the same patch item wins. A variant cannot change `layout`,
+`canvas`, `style`, or nest `scenarios` — it must stay the same diagram; a
+patch item that matches nothing is silently ignored, so ids must come from
+the base spec. Variants render through the same cache, `--check`, and
+geometry contract as the primary render.
+
 ## Copy and quality
 
 - Highlight: ideally ≤16 characters.
