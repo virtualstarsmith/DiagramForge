@@ -702,6 +702,15 @@ python scripts/spec_graph.py diff --spec v1.json --other v2.json   # architectur
 python scripts/spec_graph.py export --spec spec.json --format mermaid  # or dot
 ```
 
+For the typed layouts (`sequence`, `er`, `class`, `state`, `activity`, `dfd`),
+`scripts/lint_notation.py` judges UML semantics the structural linter cannot
+see: inheritance cycles (error), states/nodes unreachable from initial,
+state machines with no initial, sequence activations that never close
+(`"activate": false` opts out), returns from never-activated participants,
+relation/relation-endpoint ids that name nothing, and dfd processes with no
+flows. Advisory JSON like the structural lint — `--check` stays the blocking
+gate.
+
 The Mermaid export dispatches by layout: `sequence`/`er`/`class`/`state`
 emit native `sequenceDiagram`/`erDiagram`/`classDiagram`/`stateDiagram-v2`
 syntax (GitHub/Notion render them in place), while flowchart-family layouts
