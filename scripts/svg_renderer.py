@@ -2666,7 +2666,7 @@ _EXPORT_JS = r"""
 """
 
 
-def _build_interactive_html(doc, svg_markup: str, basename: str) -> str:
+def _build_interactive_html(doc, svg_markup: str, basename: str, drilldown=()) -> str:
     graph = doc.get("graph") or {"canvas": doc["canvas"], "nodes": [], "edges": []}
     hint = "点击模块高亮它的连接 · 勾选「整条链路」看全链传播 · Esc 或点空白处重置"
 
@@ -2681,6 +2681,14 @@ def _build_interactive_html(doc, svg_markup: str, basename: str) -> str:
     hotspots.append("</g>")
     head, sep, tail = svg_markup.rpartition("</svg>")
     svg_with_hotspots = head + "".join(hotspots) + sep + tail
+
+    drill_ids = {item["id"] for item in drilldown or []}
+    layers = []
+    for item in drilldown or []:
+        layers.append(
+            f'<div class="drilldown" id="drill-{item["id"]}" data-drilldown="{item["id"]}" hidden>'
+            f'{item["markup"]}</div>'
+        )
 
     payload = {
         "canvas": graph["canvas"],
@@ -2713,6 +2721,10 @@ def _build_interactive_html(doc, svg_markup: str, basename: str) -> str:
   .hotspot {{ fill: transparent; stroke: transparent; cursor: pointer; outline: none; }}
   .hotspot:hover, .hotspot:focus-visible {{ stroke: rgba(255,255,255,.55); stroke-width: 1.6; stroke-dasharray: 5 4; }}
   .hotspot.active {{ stroke: transparent; }}
+  .hotspot.drillable {{ cursor: zoom-in; }}
+  .hotspot.drillable:hover, .hotspot.drillable:focus-visible {{ stroke: rgba(94,234,212,.9); stroke-width: 2; stroke-dasharray: none; }}
+  .drilldown {{ display: flex; justify-content: center; padding: 12px; }}
+  .drilldown svg {{ max-width: 100%; height: auto; }}
   .flowdash {{ stroke-dasharray: 10 14; animation: flowmove .8s linear infinite; }}
   @keyframes flowmove {{ to {{ stroke-dashoffset: -24; }} }}
   /* Illustrated icons breathe gently in the interactive page so the diagram
@@ -2746,18 +2758,65 @@ def _build_interactive_html(doc, svg_markup: str, basename: str) -> str:
   <label><input type="checkbox" id="trace"> 整条链路</label>
   <input id="search" type="search" placeholder="搜索节点" aria-label="搜索节点">
   <button id="reset" type="button">重置</button>
+  <button id="drill-back" type="button" hidden>← 返回全景</button>
   <button id="btn-copy-png" type="button">复制 PNG</button>
   <button id="btn-download-png" type="button">下载 PNG</button>
   <button id="btn-print" type="button">打印 / PDF</button>
   <span id="caption"></span>
 </div>
 <div id="diagram">{svg_with_hotspots}</div>
+{''.join(layers)}
 <div id="tooltip"></div>
 <div id="toast"></div>
 <script>window.DIAGRAMFORGE_GRAPH = {json.dumps(payload, ensure_ascii=False)};</script>
 <script>{_INTERACTIVE_JS}</script>
 <script>{_EXPORT_JS}</script>
+<script>{_DRILLDOWN_JS}</script>
 </body></html>"""
+
+
+# Drill-down wiring: nodes whose spec declares node.link get a zoom-in
+# hotspot; clicking one swaps the stage for its embedded sub-diagram, the
+# toolbar button (or Esc) swaps back. Pure view toggling — the sub-diagram's
+# own hotspots stay inert to keep the interaction model one level deep.
+_DRILLDOWN_JS = r"""
+(() => {
+  const stage = document.getElementById("diagram");
+  const back = document.getElementById("drill-back");
+  if (!back) return;
+  const layers = document.querySelectorAll(".drilldown");
+  const open = (id) => {
+    layers.forEach((l) => { l.hidden = l.dataset.drilldown !== id; });
+    stage.hidden = true;
+    back.hidden = false;
+    back.dataset.active = id;
+    const hint = document.getElementById("caption");
+    if (hint) hint.textContent = "下钻视图：" + id + " · Esc 返回全景";
+  };
+  const close = () => {
+    layers.forEach((l) => { l.hidden = true; });
+    stage.hidden = false;
+    back.hidden = true;
+    delete back.dataset.active;
+    const hint = document.getElementById("caption");
+    if (hint) hint.textContent = window.DIAGRAMFORGE_GRAPH ? window.DIAGRAMFORGE_GRAPH.hint : "";
+  };
+  document.querySelectorAll(".hotspot").forEach((hs) => {
+    const id = hs.dataset.node;
+    if (!document.getElementById("drill-" + CSS.escape(id))) return;
+    hs.classList.add("drillable");
+    hs.addEventListener("click", (ev) => { ev.stopPropagation(); open(id); });
+    hs.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); open(id); }
+    });
+  });
+  back.addEventListener("click", close);
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && back.dataset.active) close();
+  });
+  window.__drillReady = true;
+})();
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -3207,7 +3266,7 @@ def _encode_mp4(frame_paths, fps, mp4_path) -> bool:
 
 def render_all(doc, outdir: Path, basename: str, animation: str = "flow",
                formats=("png", "gif", "mp4", "svg", "excalidraw"), scale: int = 2,
-               text_outlines: bool = False, fast_capture: bool = False) -> dict:
+               text_outlines: bool = False, fast_capture: bool = False, drilldown=()) -> dict:
     """Render every browser-produced artifact in one Chromium session.
 
     Static formats (svg, html, png, webp, avif, pdf) are captured from the
@@ -3280,13 +3339,36 @@ def render_all(doc, outdir: Path, basename: str, animation: str = "flow",
                     svg_markup = svg_optimize.optimize_svg(svg_markup, doc, FONT_DIR)
                 except Exception:
                     pass
+
+            # Drill-down layers (node.link): render each linked doc inside the
+            # same browser session, serialize it, then restore the main doc so
+            # every later capture still shows the primary diagram.
+            drilldown_layers = []
+            for item in drilldown or []:
+                sub = item["doc"]
+                sub_inject = (
+                    f"window.__doc = {json.dumps(sub, ensure_ascii=False)};"
+                    f"window.__icons = {json.dumps(_collect_icon_markups(sub), ensure_ascii=False)};"
+                    f"window.__images = {json.dumps(_collect_image_hrefs(sub), ensure_ascii=False)};"
+                )
+                page.evaluate(sub_inject)
+                page.evaluate(_RENDER_JS)
+                page.wait_for_timeout(40)
+                markup = page.evaluate(_SERIALIZE_JS, _a11y_meta(sub, f"{basename}-{item['id']}"))
+                drilldown_layers.append({"id": item["id"], "markup": markup})
+            if drilldown_layers:
+                page.evaluate(inject)
+                page.evaluate(_RENDER_JS)
+                page.wait_for_timeout(60)
+
             if "svg" in want:
                 svg_path = outdir / f"{basename}.svg"
                 svg_path.write_text(svg_markup, encoding="utf-8")
                 result["svg"] = str(svg_path)
             if "html" in want:
                 html_path = outdir / f"{basename}.html"
-                html_path.write_text(_build_interactive_html(doc, html_markup, basename), encoding="utf-8")
+                html_path.write_text(_build_interactive_html(doc, html_markup, basename,
+                                                             drilldown=drilldown_layers), encoding="utf-8")
                 result["html"] = str(html_path)
 
         if want & {"png", "webp", "avif", "pdf"}:

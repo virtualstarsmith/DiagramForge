@@ -1,0 +1,23 @@
+{
+  "layout": "graph",
+  "style": "slate",
+  "animation": "flow",
+  "title": {
+    "prefix": "电商",
+    "highlight": "全景",
+    "subtitle": "点击「订单服务」下钻到它的内部流程"
+  },
+  "direction": "down",
+  "nodes": [
+    {"id": "user", "label": "用户", "kind": "person"},
+    {"id": "order", "label": "订单服务", "icon": "file", "accent": "cyan", "link": "drilldown-detail-spec.json"},
+    {"id": "stock", "label": "库存服务", "icon": "package", "accent": "green"},
+    {"id": "mq", "label": "消息队列", "icon": "message", "accent": "purple"}
+  ],
+  "edges": [
+    {"from": "user", "to": "order", "label": "下单"},
+    {"from": "order", "to": "stock", "label": "扣减"},
+    {"from": "order", "to": "mq"}
+  ],
+  "footer": "drill-down: click the linked node in the interactive HTML"
+}

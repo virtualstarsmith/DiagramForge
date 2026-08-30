@@ -1,0 +1,21 @@
+{
+  "layout": "graph",
+  "style": "slate",
+  "animation": "flow",
+  "title": {
+    "prefix": "Order",
+    "highlight": "Detail",
+    "subtitle": "drill-down target of graph-drilldown-spec.json"
+  },
+  "direction": "down",
+  "nodes": [
+    {"id": "create", "label": "创建订单", "icon": "file"},
+    {"id": "pay", "label": "支付网关", "icon": "shield", "accent": "cyan"},
+    {"id": "ship", "label": "出库", "icon": "package", "accent": "green"}
+  ],
+  "edges": [
+    {"from": "create", "to": "pay", "label": "提交"},
+    {"from": "pay", "to": "ship", "label": "回调"}
+  ],
+  "footer": "node.link drill-down target"
+}

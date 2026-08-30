@@ -65,12 +65,14 @@ PANEL_Y = {"left_panel": 735, "center_panel": 734, "right_panel": 735}
 PANEL_H = {"left_panel": 344, "center_panel": 346, "right_panel": 344}
 
 
-def _node(node_id, kind, x, y, w, h, label="", icon=None, group=None):
+def _node(node_id, kind, x, y, w, h, label="", icon=None, group=None, link=None):
     node = {"id": node_id, "kind": kind, "x": round(x), "y": round(y), "w": round(w), "h": round(h), "label": label}
     if icon:
         node["icon"] = icon
     if group:
         node["group"] = group
+    if link:
+        node["link"] = link
     return node
 
 
@@ -1076,7 +1078,7 @@ def _plan_graph_elk(spec, raw_nodes, raw_edges, by_id, layer, cols, manual):
     for g in gnodes:
         x, y, w, h = g["_box"]
         nodes_out.append(_node(g["id"], g["_kind"], x, y, w, h, label=g.get("label", ""),
-                               icon=g.get("icon"), group=None))
+                               icon=g.get("icon"), group=None, link=g.get("link")))
         pulses.append({"box": [x, y, x + w, y + h], "color": g["_accent"]})
         if g["_kind"] == "card" and g.get("icon"):
             narrow = w < 150
@@ -1394,7 +1396,7 @@ def plan_graph(spec):
     for g in gnodes:
         x, y, w, h = g["_box"]
         nodes.append(_node(g["id"], g["_kind"], x, y, w, h, label=g.get("label", ""),
-                           icon=g.get("icon"), group=None))
+                           icon=g.get("icon"), group=None, link=g.get("link")))
         pulses.append({"box": [x, y, x + w, y + h], "color": g["_accent"]})
         if g["_kind"] == "card" and g.get("icon"):
             narrow = w < 150

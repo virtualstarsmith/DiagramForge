@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse
 import bisect
+import hashlib
 import json
 import math
 import random
@@ -3439,6 +3440,38 @@ def spec_uses_illustrations(node):
     return False
 
 
+def collect_drilldown_docs(spec, spec_path=None):
+    """Load every `node.link` target for a graph spec, rendered as sibling
+    documents the interactive HTML can embed. The renderer's theme/style/
+    sketch are global state set for the parent spec, so drilldowns inherit
+    the parent's visual system automatically — a sub spec's own style field
+    is deliberately ignored. Returns (drilldown list, notes); entries whose
+    spec fails to load are dropped with a note rather than sinking the render
+    (validation hard-fails earlier when spec_dir is known)."""
+    if str(spec.get("layout", "")) != "graph":
+        return [], []
+    drilldown, notes = [], []
+    for n in spec.get("nodes", []):
+        if not isinstance(n, dict) or not n.get("link"):
+            continue
+        nid, link = str(n["id"]), str(n["link"])
+        link_path = Path(link)
+        if not link_path.is_absolute() and spec_path is not None:
+            link_path = Path(spec_path).resolve().parent / link
+        try:
+            sub = json.loads(link_path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            notes.append(f"drilldown '{nid}' skipped: cannot load {link} ({exc})")
+            continue
+        try:
+            _ex, _img, sub_doc = render_static_with_ops(sub)
+        except Exception as exc:
+            notes.append(f"drilldown '{nid}' skipped: {type(exc).__name__}: {exc}")
+            continue
+        drilldown.append({"id": nid, "doc": sub_doc})
+    return drilldown, notes
+
+
 def write_outputs(spec, outdir, basename, icon_engine="pillow", formats=("gif", "png", "excalidraw")):
     global ICON_GLYPH_MODE
     outdir.mkdir(parents=True, exist_ok=True)
@@ -3504,7 +3537,8 @@ def write_outputs(spec, outdir, basename, icon_engine="pillow", formats=("gif", 
     return result
 
 
-def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gif", "mp4", "png", "excalidraw")):
+def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gif", "mp4", "png", "excalidraw"),
+                          spec_path=None):
     """Render via the rough.js/Chromium pipeline (scripts/svg_renderer.py)."""
     global ICON_GLYPH_MODE
     outdir.mkdir(parents=True, exist_ok=True)
@@ -3514,6 +3548,9 @@ def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gi
     finally:
         ICON_GLYPH_MODE = "draw"
     geometry_lint = lint_geometry.lint_doc(doc)
+    drilldown, dd_notes = collect_drilldown_docs(spec, spec_path)
+    for note in dd_notes:
+        print(f"warning: {note}", file=sys.stderr)
 
     # Cache: if every requested artifact for this exact doc + animation preset
     # is already on disk, skip Chromium entirely (a no-op re-render becomes
@@ -3523,7 +3560,14 @@ def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gi
     # fast_capture (rAF frame path) — or a cached run collides across options.
     text_outlines = bool(spec.get("text_outlines"))
     fast_capture = bool(spec.get("fast_capture"))
-    cache_salt = f"{animation}|to={int(text_outlines)}|fc={int(fast_capture)}"
+    dd_salt = ""
+    if drilldown:
+        digest = hashlib.sha256()
+        for item in drilldown:
+            digest.update(item["id"].encode("utf-8"))
+            digest.update(json.dumps(item["doc"], sort_keys=True, ensure_ascii=False).encode("utf-8"))
+        dd_salt = f"|dd={digest.hexdigest()[:16]}"
+    cache_salt = f"{animation}|to={int(text_outlines)}|fc={int(fast_capture)}{dd_salt}"
     if render_cache is not None:
         cached = render_cache.lookup(doc, outdir, basename, formats, salt=cache_salt)
         if cached is not None:
@@ -3533,7 +3577,9 @@ def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gi
     browser_formats = [f for f in formats if f in ("png", "gif", "mp4", "svg", "html", "webp", "avif", "pdf")]
     result = svg_renderer.render_all(doc, outdir, basename, animation=animation,
                                      formats=browser_formats, text_outlines=text_outlines,
-                                     fast_capture=fast_capture)
+                                     fast_capture=fast_capture, drilldown=drilldown)
+    if drilldown and "html" in formats:
+        result["drilldown"] = [item["id"] for item in drilldown]
 
     if "excalidraw" in formats:
         excalidraw_path = outdir / f"{basename}.excalidraw"
@@ -3739,6 +3785,9 @@ def check_outputs(result, spec):
             html_text = html_path.read_text(encoding="utf-8")
             expected_nodes = len(graph_model.build_graph(spec)["nodes"])
             hotspots = html_text.count('class="hotspot"')
+            expected_dd = sum(1 for n in spec.get("nodes", []) if isinstance(n, dict) and n.get("link")) \
+                if spec.get("layout") == "graph" else 0
+            dd_layers = html_text.count('class="drilldown"')
             checks.extend(
                 [
                     {"name": "html_hotspots", "ok": hotspots == expected_nodes, "expected": expected_nodes, "actual": hotspots},
@@ -3749,6 +3798,8 @@ def check_outputs(result, spec):
                         for btn in ("btn-copy-png", "btn-download-png", "btn-print")),
                     },
                     {"name": "html_print_css", "ok": "@media print" in html_text},
+                    {"name": "html_drilldowns", "ok": dd_layers == expected_dd,
+                     "expected": expected_dd, "actual": dd_layers},
                 ]
             )
 
@@ -3873,6 +3924,38 @@ def check_outputs(result, spec):
 KNOWN_ICONS = set(ICON_ALIASES) | {"folder", "file", "scan", "shield", "db", "hash", "package"}
 
 CUSTOM_ICON_SUFFIXES = {".svg", ".png"}
+
+# Drill-down links (node.link -> another spec JSON): one level deep, few of
+# them, small files — the interactive HTML embeds each linked diagram inline.
+MAX_DRILLDOWNS = 6
+MAX_LINK_BYTES = 2_000_000  # mirrors the import caps in scripts/mermaid_import.py
+
+
+def _check_drilldown_link(err, spec_dir, link, path):
+    link_path = Path(spec_dir) / link
+    if not link_path.is_file():
+        err(path, f"linked spec not found: {link}",
+            "check the path; relative paths resolve against the spec file's folder")
+        return
+    if link_path.stat().st_size > MAX_LINK_BYTES:
+        err(path, f"linked spec exceeds {MAX_LINK_BYTES} bytes",
+            "drill into a smaller focused view instead of embedding the whole system")
+        return
+    try:
+        sub = json.loads(link_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, UnicodeDecodeError, OSError):
+        err(path, f"linked spec is not valid JSON: {link}", "fix the linked file first")
+        return
+    if not isinstance(sub, dict):
+        err(path, f"linked spec must be a JSON object: {link}", "wrap the spec content in an object")
+        return
+    if any(isinstance(n, dict) and n.get("link") for n in sub.get("nodes", []) or []):
+        err(path, f"linked spec '{link}' has its own drill-down links",
+            "drill-down is one level deep; flatten the second level into its own diagram")
+    sub_layout = str(sub.get("layout", "panorama"))
+    if sub_layout not in graph_model.LAYOUTS:
+        err(path, f"linked spec has unknown layout '{sub_layout}'",
+            f"use one of: {', '.join(graph_model.LAYOUTS)}")
 
 
 def resolve_icon_file(value, spec_dir=None):
@@ -4179,6 +4262,7 @@ def validate_spec(spec, spec_dir=None):
         check_items("$.groups", groups, 0, 4, "label", 24, required=False)
         group_ids = {g.get("id") for g in groups if isinstance(g, dict)} if isinstance(groups, list) else set()
         node_ids = set()
+        drill_links = []
         if isinstance(nodes, list):
             if spec.get("direction", "right") == "right" and len(nodes) > 8 and not any(
                 isinstance(node, dict) and isinstance(node.get("x"), (int, float)) and isinstance(node.get("y"), (int, float))
@@ -4202,6 +4286,14 @@ def validate_spec(spec, spec_dir=None):
                 if node.get("kind", "card") not in graph_model.GRAPH_NODE_KINDS:
                     err(f"$.nodes[{i}].kind", f"unknown kind '{node.get('kind')}'",
                         "use card (default), decision, terminal, circle, person, database, or document")
+                if node.get("link") is not None:
+                    drill_links.append(str(node["id"]))
+                    link = node["link"]
+                    if not isinstance(link, str) or not link.lower().endswith(".json"):
+                        err(f"$.nodes[{i}].link", "must be a path to a spec JSON",
+                            'set link to a relative path like "detail/orders.json"')
+                    elif spec_dir is not None:
+                        _check_drilldown_link(err, spec_dir, link, f"$.nodes[{i}].link")
                 if node.get("accent") is not None and node["accent"] not in graph_model.GRAPH_ACCENTS:
                     warn(f"$.nodes[{i}].accent", f"unknown accent '{node['accent']}' (auto color used)",
                          f"use one of: {', '.join(sorted(graph_model.GRAPH_ACCENTS))}")
@@ -4219,6 +4311,9 @@ def validate_spec(spec, spec_dir=None):
                     elif node["x"] > 930 and node["y"] < 215:
                         warn(f"$.nodes[{i}]", "pinned inside the signature zone (top right); it will collide with the brand signature",
                              "keep the x > 930 / y < 215 corner clear of pinned nodes")
+        if len(drill_links) > MAX_DRILLDOWNS:
+            err("$.nodes[].link", f"a spec exposes at most {MAX_DRILLDOWNS} drill-down links (got {len(drill_links)})",
+                "keep the panorama to a handful of doors; split the rest into their own diagrams")
         edges = spec.get("edges", [])
         if not isinstance(edges, list):
             err("$.edges", "must be a list",
@@ -5555,7 +5650,8 @@ def main():
             )
 
     if renderer == "browser":
-        result = write_outputs_browser(spec, Path(args.outdir), args.basename, animation=animation, formats=formats)
+        result = write_outputs_browser(spec, Path(args.outdir), args.basename, animation=animation, formats=formats,
+                                       spec_path=str(spec_path) if spec_path else None)
     else:
         if animation != "flow":
             print(f"warning: animation preset '{animation}' requires the browser renderer; using classic flow", file=sys.stderr)
