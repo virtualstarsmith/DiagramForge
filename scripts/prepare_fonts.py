@@ -85,13 +85,20 @@ def coverage_ranges(unicodes: set[int]) -> list[list[int]]:
 def main() -> None:
     FONT_DIR.mkdir(parents=True, exist_ok=True)
 
+    bundled_ttf = FONT_DIR / "Excalifont-Regular.ttf"
     excalifont_woff2 = FONT_DIR / "Excalifont-Regular.woff2"
-    if excalifont_woff2.is_file():
+    if bundled_ttf.is_file():
+        # Idempotent: the bundled ttf is the shipped asset, and a fontTools
+        # woff2->ttf round-trip rewrites it with different bytes every run
+        # (which used to dirty the working tree whenever a subprocess test
+        # invoked this script). Rebuild only when the ttf is missing.
+        print("Excalifont: ttf already bundled, skipped")
+    elif excalifont_woff2.is_file():
         print("Excalifont: woff2 -> ttf")
         font = TTFont(excalifont_woff2)
         font.flavor = None
-        font.save(FONT_DIR / "Excalifont-Regular.ttf")
-        print(f"  Excalifont-Regular.ttf  {(FONT_DIR / 'Excalifont-Regular.ttf').stat().st_size / 1024:.0f} KB")
+        font.save(bundled_ttf)
+        print(f"  Excalifont-Regular.ttf  {bundled_ttf.stat().st_size / 1024:.0f} KB")
     else:
         print("warning: Excalifont-Regular.woff2 missing, skipped", file=sys.stderr)
 
