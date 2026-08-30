@@ -1,6 +1,6 @@
 {
   "name": "diagramforge",
-  "version": "2.3.0",
+  "version": "2.4.0",
   "description": "Business-formal animated architecture, swimlane, graph, and all 14 UML diagram types plus C4, gantt, BPMN, org chart, mindmap, timeline, and fishbone — programmatically rendered with four formal styles, an optional sketch mode, custom brand themes, and Mermaid/draw.io import.",
   "author": {
     "name": "DiagramForge"

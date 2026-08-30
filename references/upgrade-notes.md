@@ -26,7 +26,13 @@ host manifest is kept in sync (`scripts/bump_version.py --check` gates it).
 
 ## What changed (user-facing)
 
-- **2.3 (this pass)** — ecosystem round draw.io editable export (`drawio`
+- **2.4 (this pass)** — the deferred P2 items that earned their round:
+  notation lint (`scripts/lint_notation.py`: inheritance cycles, unreachable
+  states, unbalanced sequence activations — advisory, typed layouts) and
+  interactive-HTML drill-down (`node.link` embeds a second spec as a
+  one-level-deep sub-view). ELK beyond graph/activity and
+  golden-image regression stay deferred (see §7).
+- **2.3** — ecosystem round draw.io editable export (`drawio`
   format, connectors bound to shapes), interactive-HTML export toolbar
   (copy/download PNG + print, self-contained), Excalidraw arrow bindings,
   typed-layout Mermaid exports (sequence/er/class/state render natively on
