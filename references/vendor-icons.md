@@ -16,7 +16,22 @@ generic fallbacks everywhere else.
 
 ## Getting official packs
 
-Download these yourself into `assets/icons/vendor/<pack>/` (the folder is
+`scripts/icon_pack_install.py` automates the download (it fetches from the
+official sources on your machine — DiagramForge never bundles these assets):
+
+```bash
+# what is available / already installed
+python -X utf8 scripts/icon_pack_install.py --list
+
+# one-click install (flattens, kebab-case-names, drops a LICENSE.txt per pack)
+python -X utf8 scripts/icon_pack_install.py --provider k8s
+python -X utf8 scripts/icon_pack_install.py --provider simple   # ~20 brand logos, CC0
+
+# when an official URL has moved, or you downloaded the zip yourself
+python -X utf8 scripts/icon_pack_install.py --url path/to/icons.zip --pack myset
+```
+
+Or download these yourself into `assets/icons/vendor/<pack>/` (the folder is
 git-ignored on purpose):
 
 | Pack | Source | License note |
