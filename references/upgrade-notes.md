@@ -26,7 +26,18 @@ host manifest is kept in sync (`scripts/bump_version.py --check` gates it).
 
 ## What changed (user-facing)
 
-- **2.2 (this pass)** — custom brand themes (`style: "custom"` +
+- **2.3 (this pass)** — ecosystem round draw.io editable export (`drawio`
+  format, connectors bound to shapes), interactive-HTML export toolbar
+  (copy/download PNG + print, self-contained), Excalidraw arrow bindings,
+  typed-layout Mermaid exports (sequence/er/class/state render natively on
+  GitHub/Notion), scenario variants (`scenarios: [{name, patch}]` —
+  normal/degraded/failure siblings of one spec), one-click official cloud
+  icon packs (`scripts/icon_pack_install.py`), figurative graph node kinds
+  (`person` / `database` / `document`), a productized visual review loop in
+  SKILL.md, and the shape-semantics law + uniform-card-grid anti-pattern in
+  the design system. No breaking spec changes; `scenarios` and the three
+  kinds are additive.
+- **2.2** — custom brand themes (`style: "custom"` +
   `scripts/onboard_brand.py`), draw.io import (`scripts/drawio_import.py`,
   all four containers), import dials (`--detail/--audience/--size`) with a
   fidelity ledger, accessible-SVG contract on every export, output security
@@ -153,3 +164,24 @@ fall through to a full render automatically.
 `fonttools>=4.51` (runtime); `playwright>=1.49` (browser optional);
 `pytest>=8` (dev). Python `>=3.10`. Bundled vendor assets gained
 `elk.min.js` (EPL-2.0), `opentype.min.js` (MIT), and their license notes.
+
+## 7. Ecosystem round (2.3) — decision record
+
+above lists what shipped). Deferred, with rationale:
+
+- **Layers (drill-down boards)** — scenario variants shipped first
+  because they reuse the existing render loop untouched. Layers need a
+  cross-spec linking model (node → next diagram) and an interactive-HTML
+  drill-down story; worth its own round rather than a rushed subset.
+- **Per-layout UML notation lint** (PlantUML-grade semantics: activation
+  pairing, legal guards, fragment nesting rules) — needs per-layout rule
+  tables; the structural linter (`spec_graph.py lint`) plus geometry contract
+  already cover the objective failure modes.
+- **ELK beyond graph/activity** — dfd/deployment/component planners are not
+  the measured bottleneck; revisit when a real layout hurts.
+- **Golden-image visual regression** — the
+  repo explicitly rejects golden images (`tests/test_examples_fresh.py`);
+  the gallery sha256 manifest + geometry ratchet cover drift where it
+  matters without pinning pixels.
+- **Image→diagram model pipeline** —
+  out of scope for a deterministic, offline skill.

@@ -2,7 +2,7 @@
 
 **正式风格的动态架构图，程序生成，张张一致。**
 
-把一段系统描述、流程或参考图变成出版级图表：27 种版式（全部 14 种 UML 图、C4、BPMN、甘特、组织架构、思维导图、时间轴、鱼骨图，外加全景/泳道/自由图/网格目录），四种正式风格（`slate` / `report` / `academic` / `blueprint`）加可定制的品牌主题，输出 PNG / GIF / MP4 / SVG / 交互 HTML / 可编辑 Excalidraw / Lottie。
+把一段系统描述、流程或参考图变成出版级图表：27 种版式（全部 14 种 UML 图、C4、BPMN、甘特、组织架构、思维导图、时间轴、鱼骨图，外加全景/泳道/自由图/网格目录），四种正式风格（`slate` / `report` / `academic` / `blueprint`）加可定制的品牌主题，输出 PNG / GIF / MP4 / SVG / 交互 HTML（内置复制/下载/打印工具栏）/ 可编辑 Excalidraw 与 draw.io（连线绑定形状，拖动不散）/ Lottie，还能反向导出 GitHub/Notion 原生渲染的 Mermaid（sequence/er/class/state）。
 
 ![panorama 示例](assets/previews/homepage-panorama.png)
 
@@ -22,11 +22,27 @@ python -X utf8 scripts/render_animated_diagram.py \
   --formats png,gif,svg,html --check
 ```
 
-已有 Mermaid / draw.io 图？导入重绘，而不是转换：
+已有 Mermaid / draw.io 图？导入重绘，而不是转换（导出则反向交接）：
 
 ```bash
 python -X utf8 scripts/mermaid_import.py diagram.mmd --out spec.json --detail balanced
 python -X utf8 scripts/drawio_import.py platform.drawio --out spec.json --audience executive
+python -X utf8 scripts/render_animated_diagram.py --spec spec.json --outdir out --formats drawio,excalidraw,svg
+python -X utf8 scripts/spec_graph.py export --spec spec.json --format mermaid   # sequence/er/class/state 原生语法
+```
+
+一份 spec，多种系统状态（`scenarios` 变体，正常/降级/故障一次出图）：
+
+```json
+{"layout": "graph", "...": "...",
+ "scenarios": [{"name": "failure", "patch": {"nodes": [{"id": "db", "status": "failed"}]}}]}
+```
+
+官方云图标一键就位（本机下载，不再分发，渲染始终离线）：
+
+```bash
+python -X utf8 scripts/icon_pack_install.py --list
+python -X utf8 scripts/icon_pack_install.py --provider k8s
 ```
 
 品牌定制：从网站提取主题，60 秒完成，附 fidelity receipt 与 WCAG 对比度校验：
@@ -67,3 +83,4 @@ python -X utf8 scripts/onboard_brand.py --url https://yoursite.com --slug acme
 - `references/design-system.md` — 设计系统规则
 - `references/branding.md` — 品牌定制、onboarding、定制持久性承诺
 - `references/upgrade-notes.md` — 升级与迁移指南
+- `references/vendor-icons.md` — 云/品牌图标解析与一键安装
