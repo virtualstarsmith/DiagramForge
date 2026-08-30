@@ -1,0 +1,23 @@
+{
+  "layout": "graph",
+  "style": "slate",
+  "animation": "flow",
+  "title": {
+    "prefix": "Shape",
+    "highlight": "Gallery",
+    "subtitle": "graph node kinds: person / database / document"
+  },
+  "direction": "down",
+  "nodes": [
+    {"id": "ops", "label": "运维工程师", "kind": "person"},
+    {"id": "cluster", "label": "集群状态库", "kind": "database", "accent": "cyan"},
+    {"id": "runbook", "label": "Runbook", "kind": "document", "accent": "amber", "body": "回滚步骤与联系人"},
+    {"id": "gate", "label": "发布?", "kind": "decision", "accent": "green"}
+  ],
+  "edges": [
+    {"from": "ops", "to": "cluster", "label": "巡检"},
+    {"from": "cluster", "to": "runbook"},
+    {"from": "runbook", "to": "gate"}
+  ],
+  "footer": "figurative node kinds keep formal strokes"
+}

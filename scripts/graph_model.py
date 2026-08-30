@@ -813,7 +813,11 @@ GRAPH_STROKES = ["core_stroke", "green", "purple", "amber", "cyan", "pink"]
 GRAPH_LOOP_STROKES = ["purple", "pink", "amber"]
 GRAPH_FILLS = {"core_stroke": "blue_fill", "green": "green_fill", "purple": "purple_fill",
                "amber": "icon_fill", "pink": "icon_fill", "cyan": "blue_fill"}
-GRAPH_NODE_KINDS = ("card", "decision", "terminal", "circle")
+GRAPH_NODE_KINDS = ("card", "decision", "terminal", "circle", "person", "database", "document")
+# Sizes for the figurative kinds (person/database/document): fixed so the
+# hand-drawn figures keep their proportions at any graph scale.
+PERSON_SIZE = (112, 108)
+DATABASE_SIZE = (128, 88)
 # THEME keys accepted for node/edge "accent" (flow beams + pulses resolve
 # these through the active style's palette).
 GRAPH_ACCENTS = {"core_stroke", "green", "purple", "amber", "cyan", "pink", "white", "muted"}
@@ -973,6 +977,12 @@ def _plan_graph_elk(spec, raw_nodes, raw_edges, by_id, layer, cols, manual):
             w, h = min(card_w, 122), 66
         elif kind == "circle":
             w = h = 96
+        elif kind == "person":
+            w, h = PERSON_SIZE
+        elif kind == "database":
+            w, h = DATABASE_SIZE
+        elif kind == "document":
+            w, h = card_w, max(72, card_h - 20)
         else:
             w, h = card_w, card_h
         node_specs.append({"id": n["id"], "w": w, "h": h})
@@ -1198,6 +1208,16 @@ def plan_graph(spec):
             box = (cx - side / 2, cy - side / 2, side, side)
         elif kind == "terminal":
             box = (cx - card_w_xy * 0.42, cy - card_h_xy * 0.36, card_w_xy * 0.84, card_h_xy * 0.72)
+        elif kind == "person":
+            pw, ph = PERSON_SIZE
+            box = (cx - pw / 2, cy - ph / 2, pw, ph)
+        elif kind == "database":
+            dw, dh = DATABASE_SIZE
+            box = (cx - dw / 2, cy - dh / 2, dw, dh)
+        elif kind == "document":
+            dw = card_w_xy
+            dh = max(72, card_h_xy - 20)
+            box = (cx - dw / 2, cy - dh / 2, dw, dh)
         else:
             box = (cx - card_w_xy / 2, cy - card_h_xy / 2, card_w_xy, card_h_xy)
         box = tuple(round(v) for v in box)

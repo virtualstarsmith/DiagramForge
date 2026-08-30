@@ -2018,6 +2018,35 @@ def render_graph(ex, draw, spec, plan):
             draw_text(ex, draw, g.get("label", ""), cx + 8, cy + 8, side - 16, side - 16, 14,
                       THEME["white"], "center", hand=True, bold=True, fit=True, min_size=9)
             continue
+        if kind == "person":
+            head = 20
+            hx = x + (w - head) / 2
+            draw_ellipse(ex, draw, hx, y + 8, head, head, stroke, fill, 2)
+            draw_rect(ex, draw, x + 24, y + 32, w - 48, 32, stroke, fill, 2, 12)
+            draw_text(ex, draw, g.get("label", ""), x + 4, y + 68, w - 8, 36, 14,
+                      THEME["white"], "center", hand=True, bold=True, fit=True, min_size=10)
+            continue
+        if kind == "database":
+            lip = 12
+            draw_ellipse(ex, draw, x, y, w, lip * 2, stroke, fill, 2)
+            draw_line(ex, draw, [(x, y + lip), (x, y + h - lip)], stroke, 2)
+            draw_line(ex, draw, [(x + w, y + lip), (x + w, y + h - lip)], stroke, 2)
+            draw_ellipse(ex, draw, x, y + h - lip * 2, w, lip * 2, stroke, fill, 2)
+            draw_text(ex, draw, g.get("label", ""), x + 12, y + 24, w - 24, h - 48, 14,
+                      THEME["white"], "center", hand=True, bold=True, fit=True, min_size=10)
+            continue
+        if kind == "document":
+            draw_rect(ex, draw, x, y, w, h, stroke, fill, 2, RADIUS_SM)
+            corner = 22
+            # cut the top-right corner: paper patch, then the diagonal cut line
+            draw_rect(ex, draw, x + w - corner, y - 2, corner + 2, corner + 2, THEME["bg"], THEME["bg"], 1)
+            draw_line(ex, draw, [(x + w - corner, y), (x + w, y + corner)], stroke, 2)
+            draw_text(ex, draw, g.get("label", ""), x + 10, y + 8, w - 34, h - 16, 15,
+                      THEME["white"], "center", hand=True, bold=True, fit=True, min_size=10)
+            if g.get("body"):
+                draw_text(ex, draw, g.get("body", ""), x + 12, y + 34, w - 34, h - 44, 12,
+                          THEME["muted"], "center", spacing=2, fit=True, min_size=8)
+            continue
         draw_rect(ex, draw, x, y, w, h, stroke, fill, 2, RADIUS_LG)
         icon_xy = g.get("_icon_xy")
         if icon_xy and w < 150:  # narrow card: icon on top, label under it
@@ -4172,7 +4201,7 @@ def validate_spec(spec, spec_dir=None):
                 node_ids.add(str(nid) if nid else f"n{i}")
                 if node.get("kind", "card") not in graph_model.GRAPH_NODE_KINDS:
                     err(f"$.nodes[{i}].kind", f"unknown kind '{node.get('kind')}'",
-                        "use card (default), decision, or terminal")
+                        "use card (default), decision, terminal, circle, person, database, or document")
                 if node.get("accent") is not None and node["accent"] not in graph_model.GRAPH_ACCENTS:
                     warn(f"$.nodes[{i}].accent", f"unknown accent '{node['accent']}' (auto color used)",
                          f"use one of: {', '.join(sorted(graph_model.GRAPH_ACCENTS))}")
