@@ -74,15 +74,24 @@ Rules:
 
 ## 3. Visual metaphor mapping
 
-Structure carries meaning. Pick the layout element whose shape matches the
-semantics:
+**Diagrams that argue, not display.** Structure carries meaning, and a reader
+should be able to infer the *relationship* from the shape grouping alone —
+before reading a single label. A fan says "one thing feeds many"; a
+convergence says "many things become one"; a chain says "sequence"; a tree
+says "hierarchy". If the picture is a uniform field of boxes and the
+relationships only live in the text, restructure the spec until the grouping
+itself makes the argument.
+
+Pick the layout element whose shape matches the semantics:
 
 | Meaning | Expression |
 | --- | --- |
 | One → many (fan-out) | `graph` node with several outgoing `flow` edges; beams diverge in topological phase order |
+| Many → one (aggregation, merge, votes, reviews) | converging `flow` edges into a single sink node — never a row of equal boxes |
 | Cycle / retry | `graph` edge with `kind: "loop"` (dashed return channel) or swimlane right-to-left connection |
 | Comparison ("the N types of X") | `swimlane` lanes side by side with alternating tints |
 | Sequence over time | `graph` with `direction: "right"`, `flow` animation |
+| Hierarchy / containment | `orgchart` / `package` tree, parents centered over children; not stacked rows |
 | Gate / approval | `decision` diamond with `yes_label` |
 | Whole system at a glance | `panorama` (inputs → core → decision → output + detail panels) |
 | External / third party | node with `accent: "muted"` and dotted edge `style` |
@@ -102,6 +111,12 @@ Reject or rework specs that hit these:
 5. **Rainbow soup** — more accent roles than content groups; re-read 60-30-10.
 6. **Uniform emphasis** — every icon `hero`, every title highlighted; pick 1-3
    heroes that carry the story (`icon_style` guidance lives in SKILL.md §7).
+7. **Uniform card grid** — rows of same-size, same-color boxes where the
+   concept actually has structure (fan-out, convergence, sequence, hierarchy).
+   Identical boxes erase the argument the diagram exists to make. Express the
+   real relationship through shape grouping (§3) or switch layout; uniform
+   grids are only correct for genuinely parallel catalogs, which is what the
+   `grid` layout is for.
 
 ## 4a. Connector geometry contract (machine-enforced)
 
