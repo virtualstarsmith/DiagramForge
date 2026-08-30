@@ -98,7 +98,11 @@ class TextFittingTest(unittest.TestCase):
             excalidraw = json.loads(Path(result["excalidraw"]).read_text(encoding="utf-8"))
 
         text_values = [element["text"] for element in excalidraw["elements"] if element.get("type") == "text"]
-        self.assertIn("checkpoint\nconfirmation\nrequired", text_values)
+        # The decision body is narrow enough that the text wraps onto multiple
+        # lines; exact break points follow the 4px-snapped box width.
+        wrapped = [t for t in text_values if t.replace("\n", " ") == "checkpoint confirmation required"]
+        self.assertTrue(wrapped, text_values)
+        self.assertTrue(any("\n" in t for t in wrapped), text_values)
 
 
 if __name__ == "__main__":

@@ -170,10 +170,16 @@ Then render the publishing set:
 python -X utf8 scripts/render_animated_diagram.py --spec spec.json --outdir out --basename diagram --formats gif,mp4,png,excalidraw,svg,html --verify --check --strict-formats
 ```
 
-`--formats` is exact: only requested, supported files are emitted. Unknown formats fail. Use `--strict-formats` for publishing so missing MP4/SVG/HTML fails instead of silently falling back. `--check` must return `"ok": true`. Then lint the shipped artifacts against the output security contract (self-contained: no remote assets, no CSS `@import`, no executable attributes):
+`--formats` is exact: only requested, supported files are emitted. Unknown formats fail. Use `--strict-formats` for publishing so missing MP4/SVG/HTML fails instead of silently falling back. `--check` must return `"ok": true` — this includes the connector-geometry contract (`geometry_*` checks, enforced by `scripts/lint_geometry.py` on the op stream: no diagonal connectors, edge labels masked with ≥6px clearance off their lines, labels never clipped by later-drawn nodes, attach points fanned ≥12px, no transit through non-endpoint nodes, 4px grid). Then lint the shipped artifacts against the output security contract (self-contained: no remote assets, no CSS `@import`, no executable attributes):
 
 ```bash
 python -X utf8 scripts/lint_output.py out/diagram.svg out/diagram.html
+```
+
+To inspect geometry directly without rendering artifacts:
+
+```bash
+python -X utf8 scripts/lint_geometry.py --spec spec.json
 ```
 
 Available formats: `png`, `gif` (ffmpeg global-palette optimized), `mp4`, `svg` (fonts subsetted to used glyphs, ~95% smaller), `html` (interactive, reduced-motion aware), `excalidraw` (editable), plus `webp`/`avif` (modern raster), `pdf` (vector, embeddable in papers), and `lottie` (vector animation JSON for web/app/AE).

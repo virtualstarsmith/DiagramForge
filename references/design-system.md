@@ -103,6 +103,36 @@ Reject or rework specs that hit these:
 6. **Uniform emphasis** — every icon `hero`, every title highlighted; pick 1-3
    heroes that carry the story (`icon_style` guidance lives in SKILL.md §7).
 
+## 4a. Connector geometry contract (machine-enforced)
+
+Six rules, verified by `scripts/lint_geometry.py` against the op stream — one
+check covers both renderers, because Pillow and the rough.js browser pipeline
+replay the same recorded ops. `--check` surfaces them as `geometry_*` checks.
+
+1. **No diagonal connectors** — off-axis nodes connect with rounded
+   right-angle elbows. Canonical straight actor→use-case associations are
+   exempt in `usecase`; radial-by-design layouts (`fishbone`, `mindmap`,
+   `timeline`, `panorama`) are exempt.
+2. **Edge labels wear an opaque paper mask** — the connector never bleeds
+   through text, and the mask keeps ≥6px of visible line from every solid
+   connector (dashed lifelines/return channels are background by design).
+3. **Labels are drawn last** — node boxes never clip a label mask; `graph`,
+   `swimlane`, `c4`, `usecase`, and `composite` painters run two-pass for
+   this. A mask chip fully on a node is fine; half-covered is not.
+4. **Fanned attach points** — connectors on the same node edge attach ≥12px
+   apart; shared bus origins (orgchart trees) are one fan by design.
+5. **No transit through non-endpoint nodes** — reroute around intervening
+   boxes; if geometrically unavoidable, the stroke must be dashed (transit,
+   not interaction).
+6. **4px grid** — every structural coordinate, size, and gap is a multiple of
+   4 (`snap4` at the draw-primitive boundary; label-mask chips hug measured
+   glyphs and are exempt).
+
+Corner radii come from the token scale only: `RADIUS_SM` 4 (tags, chips),
+`RADIUS_MD` 8 (node boxes), `RADIUS_LG` 12 (cards, containers),
+`RADIUS_FRAME` 16 (outer chrome). Geometric pills (terminal/stadium nodes)
+and tiny controls (ports, activation bars) keep literal radii.
+
 ## 5. Node-count guidance (per diagram)
 
 | Layout | Comfortable | Hard limit | Over budget? |

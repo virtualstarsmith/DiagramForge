@@ -59,11 +59,14 @@ class OpsDocumentTest(unittest.TestCase):
 
     def test_animation_block_mirrors_plan(self):
         graph_model = load_module("graph_model")
+        snap4 = self.renderer.snap4
         plan = graph_model.plan_panorama(self.spec)
         flow = self.doc["animation"]["flow_paths"]
         self.assertEqual(len(flow), len(plan["flow_paths"]))
         for entry, fp in zip(flow, plan["flow_paths"]):
-            self.assertEqual(entry["points"], [list(p) for p in fp["points"]])
+            # The doc carries the 4px-snapped path so the animated overlay
+            # tracks the snapped static connector exactly.
+            self.assertEqual(entry["points"], [[snap4(p[0]), snap4(p[1])] for p in fp["points"]])
             self.assertEqual(entry["offset"], fp["offset"])
         pulses = self.doc["animation"]["pulse_targets"]
         self.assertEqual(len(pulses), len(plan["pulse_targets"]))

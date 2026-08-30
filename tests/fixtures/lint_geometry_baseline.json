@@ -1,0 +1,33 @@
+{
+  "_comment": "Grandfathered connector-geometry violations in shipped examples (ratchet: counts may only go DOWN; any new category or higher count fails tests/test_lint_geometry.py). Residuals tracked as graph_model routing work: class attach-fan clustering, parallel return channels <12px (graph retry x3, state top channel), risers clipping box corners (class 24x16 marker, profile, state), dense corridors (activity fork label, c4 OrderCreated, deployment HTTPS 443, er/class cardinality tags, object items).",
+  "activity-spec.json": {
+    "label-line-gap": 1
+  },
+  "c4-spec.json": {
+    "label-line-gap": 1
+  },
+  "class-spec.json": {
+    "attach-point-fan": 4,
+    "connector-through-node": 1,
+    "label-line-gap": 1
+  },
+  "deployment-spec.json": {
+    "label-line-gap": 1
+  },
+  "er-spec.json": {
+    "label-line-gap": 1
+  },
+  "graph-workflow-spec.json": {
+    "label-line-gap": 1
+  },
+  "object-spec.json": {
+    "label-line-gap": 1
+  },
+  "profile-spec.json": {
+    "connector-through-node": 1
+  },
+  "state-spec.json": {
+    "connector-through-node": 1,
+    "label-line-gap": 1
+  }
+}

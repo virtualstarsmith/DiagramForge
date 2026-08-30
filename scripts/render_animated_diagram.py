@@ -25,6 +25,7 @@ if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)  # pragma: no cover
 
 import graph_model
+import lint_geometry
 import theme_loader
 
 try:
@@ -360,6 +361,14 @@ def c(v):
     return int(round(v * SCALE))
 
 
+def snap4(v):
+    """4px grid: every coordinate, size, and gap snaps to a multiple of 4.
+    Deterministic rounding keeps shared edges shared (equal values snap
+    equal). Applied at the draw-primitive boundary so the Pillow raster, the
+    op stream, and the Excalidraw export all share snapped geometry."""
+    return round(v / 4) * 4
+
+
 def scaled_box(x, y, w, h):
     return (c(x), c(y), c(x + w), c(y + h))
 
@@ -680,6 +689,7 @@ def _label_mask(ex, draw, x, y, w, h):
 
 
 def draw_text(ex, draw, text, x, y, w, h, size, color=None, align="center", hand=False, bold=False, spacing=3, fit=False, min_size=10, wrap=True, mask=False, role=None):
+    x, y, w, h = snap4(x), snap4(y), snap4(w), snap4(h)
     color = color or THEME["white"]
     hand = hand and SKETCH  # formal mode keeps every label in the sans face
     if fit:
@@ -710,6 +720,7 @@ def draw_text(ex, draw, text, x, y, w, h, size, color=None, align="center", hand
 
 
 def draw_rect(ex, draw, x, y, w, h, stroke, fill=None, width=2, radius=RADIUS_MD, style="solid"):
+    x, y, w, h = snap4(x), snap4(y), snap4(w), snap4(h)
     ops_record({"op": "rect", "x": x, "y": y, "w": w, "h": h, "stroke": stroke, "fill": fill,
                 "width": width, "radius": radius, "style": style})
     ex.rect(x, y, w, h, stroke, fill or "transparent", width, style)
@@ -717,6 +728,7 @@ def draw_rect(ex, draw, x, y, w, h, stroke, fill=None, width=2, radius=RADIUS_MD
 
 
 def draw_ellipse(ex, draw, x, y, w, h, stroke, fill=None, width=2):
+    x, y, w, h = snap4(x), snap4(y), snap4(w), snap4(h)
     ops_record({"op": "ellipse", "x": x, "y": y, "w": w, "h": h, "stroke": stroke, "fill": fill, "width": width})
     ex.ellipse(x, y, w, h, stroke, fill or "transparent", width)
     draw.ellipse(scaled_box(x, y, w, h), outline=hex_rgba(stroke), fill=hex_rgba(fill) if fill else None, width=max(1, c(width)))
@@ -733,6 +745,7 @@ def draw_line(ex, draw, points, stroke, width=2, style="solid", arrow=False):
         if tuple(p) != tuple(clean[-1]):
             clean.append(p)
     points = clean
+    points = [(snap4(px), snap4(py)) for px, py in points]
     ops_record({"op": "line", "points": [[px, py] for px, py in points], "stroke": stroke,
                 "width": width, "style": style, "arrow": arrow})
     ex.line(points, stroke, width, style, arrow)
@@ -755,6 +768,7 @@ def draw_line(ex, draw, points, stroke, width=2, style="solid", arrow=False):
 
 
 def draw_diamond(ex, draw, x, y, w, h, stroke, fill=None, width=2):
+    x, y, w, h = snap4(x), snap4(y), snap4(w), snap4(h)
     ops_record({"op": "diamond", "x": x, "y": y, "w": w, "h": h, "stroke": stroke, "fill": fill, "width": width})
     ex.diamond(x, y, w, h, stroke, fill or "transparent", width)
     pts = [(x + w / 2, y), (x + w, y + h / 2), (x + w / 2, y + h), (x, y + h / 2)]
@@ -1710,19 +1724,157 @@ def _edge_label_anchor(points):
     return best
 
 
+def _solid_segs_drawn():
+    """Solid connector segments already recorded in the op stream. Edge labels
+    are drawn after their lines (two-pass painters draw them after all lines),
+    so this is the full obstacle field a label mask must keep clear of."""
+    segs = []
+    if OPS_SINK:
+        for op in OPS_SINK:
+            if op.get("op") == "line" and op.get("style", "solid") == "solid":
+                pts = op.get("points", [])
+                segs.extend((tuple(a), tuple(b)) for a, b in zip(pts, pts[1:]))
+    return segs
+
+
+def _mask_clearance(mx0, my0, mw, mh, segs):
+    """Min distance from a candidate mask rect to any solid segment."""
+    x0, y0, x1, y1 = mx0, my0, mx0 + mw, my0 + mh
+    corners = [(x0, y0), (x1, y0), (x1, y1), (x0, y1)]
+    edges = list(zip(corners, corners[1:] + corners[:1]))
+    best = math.inf
+    for a, b in segs:
+        # Quick reject: segment bbox far from the rect.
+        if max(a[0], b[0]) < x0 - 60 or min(a[0], b[0]) > x1 + 60:
+            continue
+        if max(a[1], b[1]) < y0 - 60 or min(a[1], b[1]) > y1 + 60:
+            continue
+        if (x0 < a[0] < x1 and y0 < a[1] < y1) or (x0 < b[0] < x1 and y0 < b[1] < y1):
+            return 0.0
+        hit = False
+        for c1, c2 in edges:
+            if _segs_cross(a, b, c1, c2):
+                hit = True
+                break
+        if hit:
+            return 0.0
+        for c in corners:
+            best = min(best, _pt_seg_dist(c, a, b))
+        for c1, c2 in edges:
+            best = min(best, _pt_seg_dist(a, c1, c2), _pt_seg_dist(b, c1, c2))
+    return best
+
+
+def _segs_cross(a, b, c, d):
+    def orient(p, q, r):
+        v = (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+        return (v > 0) - (v < 0)
+
+    o1, o2, o3, o4 = orient(a, b, c), orient(a, b, d), orient(c, d, a), orient(c, d, b)
+    return o1 != o2 and o3 != o4
+
+
+def _pt_seg_dist(p, a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    if dx == 0 and dy == 0:
+        return math.dist(p, a)
+    t = max(0.0, min(1.0, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)))
+    return math.dist(p, (a[0] + t * dx, a[1] + t * dy))
+
+
 def draw_edge_label(ex, draw, text, mx, my, horiz, lw=120, lh=20, size=12, color=None, min_size=9, dy=0):
     """Edge label kept off its own connector: centered above a horizontal run,
-    to the right of a vertical run, always with EDGE_LABEL_GAP of visible line
-    between the mask chip and the stroke. Returns the (x, y) used."""
+    to the right of a vertical run, with EDGE_LABEL_GAP of visible line
+    between the mask chip and the stroke. When the default spot collides with
+    another solid connector, the label is nudged along the run until its mask
+    clears every line drawn so far. Returns the (x, y) used."""
     color = color or THEME["white"]
     if horiz:
-        lx, ly, align = mx - lw / 2, my - EDGE_LABEL_GAP - lh + dy, "center"
+        lw0, align = lw, "center"
+        base = (mx - lw / 2, my - EDGE_LABEL_GAP - lh + dy)
     else:
-        lw = min(lw, 120)
-        lx, ly, align = mx + EDGE_LABEL_GAP, my - lh / 2 + dy, "left"
-    draw_text(ex, draw, text, lx, ly, lw, lh, size, color, align, fit=True, min_size=min_size,
+        lw0, align = min(lw, 120), "left"
+        # The snug mask pads the glyphs by 6px on each side; add it to the
+        # offset so the *mask*, not just the text, keeps EDGE_LABEL_GAP clear.
+        base = (mx + EDGE_LABEL_GAP + 6, my - lh / 2 + dy)
+    lx, ly = base
+    # Measure the snug mask (not the layout box) so the clearance check
+    # matches what actually gets painted.
+    ftext, _fsize, font = fit_text(draw, text, lw0, lh, size, min_size=min_size)
+    tw, th = text_size(draw, ftext, font, spacing=3)
+    segs = _solid_segs_drawn()
+    if segs and ftext:
+        def mask_at(cx, cy):
+            # Predict post-snap geometry: draw_text snaps the box to the 4px
+            # grid before measuring, so the estimate must snap the same way.
+            scx, scy, sw, sh = snap4(cx), snap4(cy), snap4(lw0), snap4(lh)
+            tx = scx + (sw - tw) / 2 if align == "center" else scx
+            ty = scy + (sh - th) / 2
+            return tx - 6, ty - 3, tw + 12, th + 6
+
+        shifts = [0]
+        for k in range(1, 7):
+            shifts += [-8 * k, 8 * k]
+        best_pos, best_clear = (lx, ly), -1
+        for s in shifts:
+            cand = (lx + s, ly) if horiz else (lx, ly + s)
+            clear = _mask_clearance(*mask_at(*cand), segs)
+            if clear >= 6:
+                best_pos, best_clear = cand, clear
+                break
+            if clear > best_clear:
+                best_pos, best_clear = cand, clear
+        lx, ly = best_pos
+    draw_text(ex, draw, text, lx, ly, lw0, lh, size, color, align, fit=True, min_size=min_size,
               mask=True, role="edge-label")
     return lx, ly
+
+
+def draw_cardinality_label(ex, draw, text, pts, from_end, lw=26, size=12, min_size=9):
+    """Cardinality tag (1, N, M…) beside a relation endpoint, placed on the
+    side of the line AWAY from the elbow turn so the riser never crosses the
+    tag. ``pts`` is the full routed path; ``from_end`` picks which endpoint."""
+    p = pts[0] if from_end else pts[-1]
+    corner = pts[1] if from_end else pts[-2]
+    dx, dy = corner[0] - p[0], corner[1] - p[1]
+    nxt = (pts[2] if from_end else pts[-3]) if len(pts) > 2 else None
+    if abs(dx) >= abs(dy):
+        # Horizontal leave/arrive: sit on the side opposite the vertical turn.
+        turn_up = nxt is not None and (nxt[1] - corner[1]) < 0
+        ly = p[1] + 8 if turn_up else p[1] - 26
+        if from_end:
+            # Label just outside the source box, on the leaving side.
+            lx = p[0] + (10 if dx >= 0 else -34)
+        else:
+            # Label on the approach side of the destination endpoint — the
+            # other side is inside the destination box.
+            lx = p[0] + (12 if dx >= 0 else -38)
+    else:
+        # Vertical leave/arrive: sit beside the endpoint, opposite the turn.
+        turn_right = nxt is None or (nxt[0] - corner[0]) > 0
+        ly = p[1] - 26
+        lx = p[0] + (-34 if turn_right else 10)
+    segs = _solid_segs_drawn()
+    if segs:
+        ftext, _fsize, font = fit_text(draw, text, lw, 18, size, min_size=min_size)
+        tw, th = text_size(draw, ftext, font, spacing=3)
+        if ftext:
+            def mask_at(cx):
+                tx = cx + (lw - tw) / 2
+                ty = ly + (18 - th) / 2
+                return tx - 6, ty - 3, tw + 12, th + 6
+
+            best_lx, best_clear = lx, -1
+            for s in [0, -8, 8, -16, 16, -24, 24]:
+                clear = _mask_clearance(*mask_at(lx + s), segs)
+                if clear >= 6:
+                    best_lx, best_clear = lx + s, clear
+                    break
+                if clear > best_clear:
+                    best_lx, best_clear = lx + s, clear
+            lx = best_lx
+    draw_text(ex, draw, text, lx, ly, lw, 18, size, THEME["muted"], "center",
+              fit=True, min_size=min_size, mask=True, role="edge-label")
 
 
 def draw_edge_badge(ex, draw, badge, mx, my, color):
@@ -1896,7 +2048,9 @@ def render_sequence(ex, draw, spec, plan):
         if not label:
             continue
         if m["kind"] == "self":
-            draw_text(ex, draw, label, pts[0][0] + 74, pts[0][1] + 2, 150, 22, 13,
+            # +84: the loop's vertical leg ends at +64; the snug mask pads 6px,
+            # so this keeps the mask 12px+ clear of the leg.
+            draw_text(ex, draw, label, pts[0][0] + 84, pts[0][1] + 2, 150, 22, 13,
                       THEME["white"], "left", fit=True, min_size=10, mask=True, role="edge-label")
         else:
             lx = min(pts[0][0], pts[-1][0])
@@ -1955,13 +2109,10 @@ def render_er(ex, draw, spec, plan):
     for r in er["relations"]:
         pts = r["_points"]
         draw_line(ex, draw, pts, THEME["white"], 1.5, "solid", False)
-        p1, p2 = pts[0], pts[-1]
         if r.get("from_card"):
-            draw_text(ex, draw, r["from_card"], p1[0] + (10 if p2[0] >= p1[0] else -34), p1[1] - 24, 26, 18, 12,
-                      THEME["muted"], "center", fit=True, min_size=9, mask=True, role="edge-label")
+            draw_cardinality_label(ex, draw, r["from_card"], pts, from_end=True)
         if r.get("to_card"):
-            draw_text(ex, draw, r["to_card"], p2[0] + (-38 if p2[0] >= p1[0] else 12), p2[1] - 24, 26, 18, 12,
-                      THEME["muted"], "center", fit=True, min_size=9, mask=True, role="edge-label")
+            draw_cardinality_label(ex, draw, r["to_card"], pts, from_end=False)
         if r.get("label"):
             mx, my, horiz = _edge_label_anchor(pts)
             draw_edge_label(ex, draw, r["label"], mx, my, horiz, lw=120, lh=20, size=13,
@@ -2076,11 +2227,9 @@ def render_class(ex, draw, spec, plan):
             _class_diamond(ex, draw, pts, THEME["white"], filled=(r["kind"] == "composition"))
         p1, p2 = pts[0], pts[-1]
         if r.get("from_card"):
-            draw_text(ex, draw, r["from_card"], p1[0] + 12, p1[1] - 24, 30, 18, 11,
-                      THEME["muted"], "center", fit=True, min_size=8, mask=True, role="edge-label")
+            draw_cardinality_label(ex, draw, r["from_card"], pts, from_end=True, lw=30, size=11, min_size=8)
         if r.get("to_card"):
-            draw_text(ex, draw, r["to_card"], p2[0] - 42, p2[1] - 24, 30, 18, 11,
-                      THEME["muted"], "center", fit=True, min_size=8, mask=True, role="edge-label")
+            draw_cardinality_label(ex, draw, r["to_card"], pts, from_end=False, lw=30, size=11, min_size=8)
         if r.get("label"):
             mx, my, horiz = _edge_label_anchor(pts)
             draw_edge_label(ex, draw, r["label"], mx, my, horiz, lw=120, lh=20, size=12,
@@ -2384,10 +2533,6 @@ def render_composite(ex, draw, spec, plan):
                   THEME["muted"], "right", bold=True, fit=True, min_size=10)
     for c in comp["connectors"]:
         draw_line(ex, draw, c["_points"], THEME["white"], 1.5, "solid", False)
-        if c["label"]:
-            mx, my, horiz = _edge_label_anchor(c["_points"])
-            draw_edge_label(ex, draw, c["label"], mx, my, horiz, lw=120, lh=20, size=12,
-                            color=THEME["white"], min_size=9)
     for p in comp["parts"]:
         x, y, w, h = p["_box"]
         accent = THEME.get(p["_accent"], THEME["green"])
@@ -2411,6 +2556,12 @@ def render_composite(ex, draw, spec, plan):
             else:
                 draw_text(ex, draw, po["label"], x - 36, y + h + 4, 90, 18, 10, THEME["muted"], "center",
                           fit=True, min_size=8)
+    # Connector labels last: part boxes must not clip the mask chips.
+    for c in comp["connectors"]:
+        if c["label"]:
+            mx, my, horiz = _edge_label_anchor(c["_points"])
+            draw_edge_label(ex, draw, c["label"], mx, my, horiz, lw=120, lh=20, size=12,
+                            color=THEME["white"], min_size=9)
     if spec.get("footer"):
         draw_text(ex, draw, spec["footer"], 105, plan["canvas"]["height"] - 40, 1000, 26, 14,
                   THEME["muted"], "center")
@@ -2915,11 +3066,13 @@ def render_static_with_ops(spec):
         "theme": dict(THEME),
         "animation": {
             "flow_paths": [
-                {"points": [list(p) for p in fp["points"]], "color": THEME[fp["color"]], "offset": fp["offset"]}
+                # Snap to the 4px grid so the animated overlay tracks the
+                # (snapped) static connector exactly.
+                {"points": [[snap4(px), snap4(py)] for px, py in fp["points"]], "color": THEME[fp["color"]], "offset": fp["offset"]}
                 for fp in plan["flow_paths"]
             ],
             "pulse_targets": [
-                {"box": list(pt["box"]), "color": THEME[pt["color"]]} for pt in plan["pulse_targets"]
+                {"box": [snap4(v) for v in pt["box"]], "color": THEME[pt["color"]]} for pt in plan["pulse_targets"]
             ],
         },
         "graph": {"canvas": plan["canvas"], "nodes": plan["nodes"], "edges": _json_edges(plan["edges"])},
@@ -3112,7 +3265,8 @@ def animate_frame(base, idx, total, spec=None, icon_motion=True, plan=None):
     overlay = Image.new("RGBA", frame.size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(overlay)
     progress = idx / total
-    paths = [([tuple(p) for p in fp["points"]], THEME[fp["color"]], fp["offset"]) for fp in plan["flow_paths"]]
+    paths = [[(snap4(px), snap4(py)) for px, py in fp["points"]] for fp in plan["flow_paths"]]
+    paths = [(pts, THEME[fp["color"]], fp["offset"]) for pts, fp in zip(paths, plan["flow_paths"])]
     flow_speed = 1          # integer loops per GIF -> seamless; keep slow & readable
     heads_per_path = 2      # multiple dots streaming along each arrow (effect B)
     trail_dots = 6          # comet tail length (effect C)
@@ -3219,7 +3373,7 @@ def write_outputs(spec, outdir, basename, icon_engine="pillow", formats=("gif", 
 
     ICON_GLYPH_MODE = "skip" if use_browser else "draw"
     try:
-        ex, static = render_static(spec)
+        ex, static, ops_doc = render_static_with_ops(spec)
         plan = CURRENT_PLAN
         final = premium_finish(static, plan)
     finally:
@@ -3253,6 +3407,7 @@ def write_outputs(spec, outdir, basename, icon_engine="pillow", formats=("gif", 
         "elements": len(ex.elements),
         "canvas": dict(plan["canvas"]),
         "icon_engine": "browser" if use_browser else "pillow",
+        "geometry_lint": lint_geometry.lint_doc(ops_doc),
     }
     if "png" in want:
         result["png"] = str(png_path)
@@ -3272,6 +3427,7 @@ def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gi
         ex, _static, doc = render_static_with_ops(spec)
     finally:
         ICON_GLYPH_MODE = "draw"
+    geometry_lint = lint_geometry.lint_doc(doc)
 
     # Cache: if every requested artifact for this exact doc + animation preset
     # is already on disk, skip Chromium entirely (a no-op re-render becomes
@@ -3285,6 +3441,7 @@ def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gi
     if render_cache is not None:
         cached = render_cache.lookup(doc, outdir, basename, formats, salt=cache_salt)
         if cached is not None:
+            cached["geometry_lint"] = geometry_lint
             return cached
 
     browser_formats = [f for f in formats if f in ("png", "gif", "mp4", "svg", "html", "webp", "avif", "pdf")]
@@ -3306,6 +3463,7 @@ def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gi
     result["elements"] = len(ex.elements)
     result["canvas"] = dict(doc["canvas"])
     result["renderer"] = "browser"
+    result["geometry_lint"] = geometry_lint
     if render_cache is not None:
         render_cache.store(doc, outdir, basename, result, formats, salt=cache_salt)
     return result
@@ -3565,6 +3723,21 @@ def check_outputs(result, spec):
         checks.append({"name": "pdf_exists", "ok": pdf_path.is_file() and pdf_path.stat().st_size > 0})
 
     checks.extend(graph_layout_checks(spec))
+
+    # Connector-geometry contract (scripts/lint_geometry.py), computed on the
+    # op stream by write_outputs*/write_outputs_browser.
+    if "geometry_lint" in result:
+        by_cat = {}
+        for v in result["geometry_lint"]:
+            by_cat.setdefault(v["category"], []).append(v)
+        for cat in ("diagonal-connector", "label-mask-covered", "attach-point-fan",
+                    "connector-through-node", "label-line-gap", "off-grid"):
+            found = by_cat.get(cat, [])
+            checks.append({
+                "name": f"geometry_{cat.replace('-', '_')}",
+                "ok": not found,
+                "violations": [v["message"] for v in found[:5]],
+            })
 
     return {"ok": all(check["ok"] for check in checks), "checks": checks}
 

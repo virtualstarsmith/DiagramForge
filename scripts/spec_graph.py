@@ -36,33 +36,37 @@ import graph_model  # noqa: E402
 
 # Comfortable element budgets per layout (see references/design-system.md).
 BUDGETS = {
+    # "comfortable" matches design-system.md §5 (info-level nudge); "hard" is
+    # the SKILL.md §2 capacity ceiling — exceeding it renders an unreadable
+    # diagram and is an error-level lint issue. Edge caps apply where the
+    # SKILL.md table publishes one.
     "panorama": {"comfortable": 15, "label": "panorama elements"},
-    "swimlane": {"comfortable": 40, "label": "swimlane steps"},
-    "grid": {"comfortable": 36, "label": "grid steps"},
-    "graph": {"comfortable": 15, "label": "graph nodes"},
-    "sequence": {"comfortable": 20, "label": "sequence messages"},
-    "er": {"comfortable": 8, "label": "er entities"},
-    "usecase": {"comfortable": 12, "label": "usecase items"},
-    "class": {"comfortable": 8, "label": "class boxes"},
-    "activity": {"comfortable": 15, "label": "activity nodes"},
-    "state": {"comfortable": 10, "label": "state nodes"},
-    "dfd": {"comfortable": 12, "label": "dfd nodes"},
-    "deployment": {"comfortable": 10, "label": "deployment nodes"},
-    "component": {"comfortable": 10, "label": "component items"},
-    "package": {"comfortable": 10, "label": "packages"},
-    "object": {"comfortable": 8, "label": "object boxes"},
-    "composite": {"comfortable": 10, "label": "composite parts"},
-    "profile": {"comfortable": 10, "label": "profile items"},
-    "communication": {"comfortable": 10, "label": "communication objects"},
-    "timing": {"comfortable": 12, "label": "timing lifelines/events"},
-    "interaction": {"comfortable": 12, "label": "interaction frames"},
-    "c4": {"comfortable": 12, "label": "c4 elements"},
-    "gantt": {"comfortable": 20, "label": "gantt tasks"},
-    "bpmn": {"comfortable": 15, "label": "bpmn elements"},
-    "orgchart": {"comfortable": 15, "label": "orgchart nodes"},
-    "mindmap": {"comfortable": 16, "label": "mindmap topics"},
-    "timeline": {"comfortable": 10, "label": "timeline events"},
-    "fishbone": {"comfortable": 16, "label": "fishbone categories/causes"},
+    "swimlane": {"comfortable": 40, "hard": 64, "label": "swimlane steps"},
+    "grid": {"comfortable": 36, "hard": 54, "label": "grid steps"},
+    "graph": {"comfortable": 15, "hard": 24, "hard_edges": 40, "label": "graph nodes"},
+    "sequence": {"comfortable": 20, "hard": 30, "label": "sequence messages"},
+    "er": {"comfortable": 8, "hard": 12, "hard_edges": 16, "label": "er entities"},
+    "usecase": {"comfortable": 12, "hard": 22, "hard_edges": 24, "label": "usecase items"},
+    "class": {"comfortable": 8, "hard": 10, "hard_edges": 16, "label": "class boxes"},
+    "activity": {"comfortable": 15, "hard": 24, "hard_edges": 40, "label": "activity nodes"},
+    "state": {"comfortable": 10, "hard": 20, "hard_edges": 30, "label": "state nodes"},
+    "dfd": {"comfortable": 12, "hard": 20, "hard_edges": 30, "label": "dfd nodes"},
+    "deployment": {"comfortable": 10, "hard": 16, "hard_edges": 20, "label": "deployment nodes"},
+    "component": {"comfortable": 10, "hard": 12, "hard_edges": 16, "label": "component items"},
+    "package": {"comfortable": 10, "hard": 14, "hard_edges": 16, "label": "packages"},
+    "object": {"comfortable": 8, "hard": 12, "hard_edges": 16, "label": "object boxes"},
+    "composite": {"comfortable": 10, "hard": 10, "hard_edges": 16, "label": "composite parts"},
+    "profile": {"comfortable": 10, "hard": 14, "hard_edges": 20, "label": "profile items"},
+    "communication": {"comfortable": 10, "hard": 12, "hard_edges": 20, "label": "communication objects"},
+    "timing": {"comfortable": 12, "hard": 17, "hard_edges": 10, "label": "timing lifelines/events"},
+    "interaction": {"comfortable": 12, "hard": 16, "hard_edges": 24, "label": "interaction frames"},
+    "c4": {"comfortable": 12, "hard": 16, "hard_edges": 20, "label": "c4 elements"},
+    "gantt": {"comfortable": 20, "hard": 80, "label": "gantt tasks"},
+    "bpmn": {"comfortable": 15, "hard": 24, "hard_edges": 30, "label": "bpmn elements"},
+    "orgchart": {"comfortable": 15, "hard": 24, "label": "orgchart nodes"},
+    "mindmap": {"comfortable": 16, "hard": 50, "label": "mindmap topics"},
+    "timeline": {"comfortable": 10, "hard": 12, "label": "timeline events"},
+    "fishbone": {"comfortable": 16, "hard": 24, "label": "fishbone categories/causes"},
 }
 
 
@@ -299,12 +303,27 @@ def lint(spec):
                   "connect the parts or split into separate diagrams",
                   nodes=[nid for group in components[1:] for nid in group])
 
-        budget = BUDGETS.get(layout, BUDGETS["graph"])
+    # Complexity budget applies to every layout: "comfortable" is an
+    # info-level nudge, the SKILL.md §2 "hard" ceiling is an error.
+    # Panorama is a fixed art-directed template — the author doesn't control
+    # element counts, so budget guidance is meaningless there (same precedent
+    # as its topology-check exemption above).
+    budget = None if layout == "panorama" else BUDGETS.get(layout)
+    if budget:
         n_nodes = len(graph["nodes"])
-        if n_nodes > budget["comfortable"]:
+        n_edges = len(graph["edges"])
+        if budget.get("hard") and n_nodes > budget["hard"]:
+            issue("error", "over_hard_budget",
+                  f"{n_nodes} {budget['label']} exceeds the {budget['hard']} ceiling",
+                  "split into an overview plus detail diagrams; never shrink the type to fit")
+        elif n_nodes > budget["comfortable"]:
             issue("info", "over_budget",
                   f"{n_nodes} {budget['label']} exceeds the comfortable {budget['comfortable']}",
                   "split into focused views; use `spec_graph.py around --node X --hops N` to render a neighborhood")
+        if budget.get("hard_edges") and n_edges > budget["hard_edges"]:
+            issue("error", "over_hard_budget",
+                  f"{n_edges} edges exceeds the {budget['hard_edges']} ceiling for {layout}",
+                  "split into an overview plus detail diagrams; never shrink the type to fit")
 
     return {
         "ok": not any(i["severity"] == "error" for i in issues),
