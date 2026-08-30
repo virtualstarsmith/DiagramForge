@@ -40,6 +40,22 @@ def test_interactive_html_includes_search_control():
     assert "搜索节点" in html
 
 
+def test_interactive_html_has_selfcontained_export_toolbar():
+    renderer = load("render_animated_diagram")
+    svg_renderer = load("svg_renderer")
+    spec = json.loads((ROOT / "assets" / "examples" / "swimlane-spec.json").read_text(encoding="utf-8"))
+    renderer.apply_style(spec["style"])
+    _ex, _img, doc = renderer.render_static_with_ops(spec)
+    html = svg_renderer._build_interactive_html(doc, '<svg xmlns="http://www.w3.org/2000/svg"></svg>', "swimlane")
+    for btn in ("btn-copy-png", "btn-download-png", "btn-print"):
+        assert f'id="{btn}"' in html, f"missing export button {btn}"
+    # The rasterizer must be fully in-page: no remote scripts/styles/assets.
+    assert "toBlob" in html and "encodeURIComponent" in html
+    assert "@media print" in html, "print/PDF stylesheet missing"
+    for forbidden in ("<script src=", "<link href=\"http", "@import", "src=\"http"):
+        assert forbidden not in html, f"remote/unsafe reference found: {forbidden}"
+
+
 def test_illustrated_icons_are_recorded_and_validated():
     renderer = load("render_animated_diagram")
     path = ROOT / "assets" / "examples" / "illustrated-loop-spec.json"

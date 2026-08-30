@@ -2592,6 +2592,79 @@ _INTERACTIVE_JS = r"""
 })();
 """
 
+# Export toolbar: rasterize the embedded SVG to a 2x PNG entirely in-page —
+# no remote assets, no server — so every interactive HTML doubles as a
+# one-click source for clipboard images, downloads, and print/PDF.
+_EXPORT_JS = r"""
+(() => {
+  const scale = 2;
+  const toastEl = document.getElementById("toast");
+  const toast = (msg) => {
+    if (!toastEl) return;
+    toastEl.textContent = msg;
+    toastEl.style.opacity = 1;
+    clearTimeout(toast.__t);
+    toast.__t = setTimeout(() => { toastEl.style.opacity = 0; }, 2200);
+  };
+  const rasterize = (cb) => {
+    const src = document.querySelector("#diagram svg");
+    if (!src) { cb(null); return; }
+    const clone = src.cloneNode(true);
+    clone.querySelectorAll("#hotspots").forEach((n) => n.remove());
+    clone.querySelectorAll(".hotspot").forEach((n) => n.remove());
+    // Page-level CSS does not travel with a serialized SVG; inline the few
+    // rules the exported picture still needs.
+    const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
+    style.textContent = ".flowdash{stroke-dasharray:10 14;animation:none}.hotspot{fill:none;stroke:none}";
+    clone.insertBefore(style, clone.firstChild);
+    const vb = (src.getAttribute("viewBox") || "0 0 0 0").split(/\s+/).map(Number);
+    const w = vb[2] || src.clientWidth || 1200;
+    const h = vb[3] || src.clientHeight || 800;
+    clone.setAttribute("width", w);
+    clone.setAttribute("height", h);
+    const xml = new XMLSerializer().serializeToString(clone);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.round(w * scale);
+      canvas.height = Math.round(h * scale);
+      const ctx = canvas.getContext("2d");
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0, w, h);
+      canvas.toBlob((blob) => cb(blob), "image/png");
+    };
+    img.onerror = () => cb(null);
+    img.src = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(xml);
+  };
+  const download = (blob) => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.title || "diagram") + ".png";
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  };
+  document.getElementById("btn-copy-png").addEventListener("click", () => {
+    rasterize(async (blob) => {
+      if (!blob) { toast("PNG 生成失败"); return; }
+      try {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        toast("已复制 2x PNG 到剪贴板");
+      } catch (err) {
+        download(blob);
+        toast("当前环境不支持剪贴板，已改为下载");
+      }
+    });
+  });
+  document.getElementById("btn-download-png").addEventListener("click", () => {
+    rasterize((blob) => {
+      if (blob) { download(blob); toast("已下载 2x PNG"); }
+      else { toast("PNG 生成失败"); }
+    });
+  });
+  document.getElementById("btn-print").addEventListener("click", () => window.print());
+})();
+"""
+
 
 def _build_interactive_html(doc, svg_markup: str, basename: str) -> str:
     graph = doc.get("graph") or {"canvas": doc["canvas"], "nodes": [], "edges": []}
@@ -2657,6 +2730,15 @@ def _build_interactive_html(doc, svg_markup: str, basename: str) -> str:
   #tooltip {{ position: fixed; pointer-events: none; opacity: 0; transition: opacity .12s;
               background: rgba(10,10,10,.92); color: #f4f0ee; border: 1px solid rgba(255,255,255,.25);
               padding: 4px 10px; border-radius: 8px; font-size: 13px; z-index: 10; }}
+  #toast {{ position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%); opacity: 0;
+            transition: opacity .18s; background: rgba(10,10,10,.92); color: #f4f0ee;
+            border: 1px solid rgba(255,255,255,.25); padding: 6px 14px; border-radius: 8px;
+            font-size: 13px; z-index: 11; pointer-events: none; }}
+  @media print {{
+    .toolbar, #tooltip, #toast {{ display: none !important; }}
+    html, body {{ background: #ffffff; }}
+    #diagram {{ padding: 0; }}
+  }}
 </style></head>
 <body>
 <div class="toolbar">
@@ -2664,12 +2746,17 @@ def _build_interactive_html(doc, svg_markup: str, basename: str) -> str:
   <label><input type="checkbox" id="trace"> 整条链路</label>
   <input id="search" type="search" placeholder="搜索节点" aria-label="搜索节点">
   <button id="reset" type="button">重置</button>
+  <button id="btn-copy-png" type="button">复制 PNG</button>
+  <button id="btn-download-png" type="button">下载 PNG</button>
+  <button id="btn-print" type="button">打印 / PDF</button>
   <span id="caption"></span>
 </div>
 <div id="diagram">{svg_with_hotspots}</div>
 <div id="tooltip"></div>
+<div id="toast"></div>
 <script>window.DIAGRAMFORGE_GRAPH = {json.dumps(payload, ensure_ascii=False)};</script>
 <script>{_INTERACTIVE_JS}</script>
+<script>{_EXPORT_JS}</script>
 </body></html>"""
 
 

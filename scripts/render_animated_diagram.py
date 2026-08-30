@@ -3664,6 +3664,11 @@ def check_outputs(result, spec):
                     {"name": "html_hotspots", "ok": hotspots == expected_nodes, "expected": expected_nodes, "actual": hotspots},
                     {"name": "html_graph_embedded", "ok": "DIAGRAMFORGE_GRAPH" in html_text},
                     {"name": "html_fonts_embedded", "ok": "@font-face" in html_text},
+                    {"name": "html_export_toolbar", "ok": all(
+                        f'id="{btn}"' in html_text
+                        for btn in ("btn-copy-png", "btn-download-png", "btn-print")),
+                    },
+                    {"name": "html_print_css", "ok": "@media print" in html_text},
                 ]
             )
 
