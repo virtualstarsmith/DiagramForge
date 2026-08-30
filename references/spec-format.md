@@ -702,6 +702,15 @@ python scripts/spec_graph.py diff --spec v1.json --other v2.json   # architectur
 python scripts/spec_graph.py export --spec spec.json --format mermaid  # or dot
 ```
 
+The Mermaid export dispatches by layout: `sequence`/`er`/`class`/`state`
+emit native `sequenceDiagram`/`erDiagram`/`classDiagram`/`stateDiagram-v2`
+syntax (GitHub/Notion render them in place), while flowchart-family layouts
+emit `graph TD/LR`. Typed exports cover a notated subset — sequence
+activations and `par`/`critical` fragments, ER composite keys, and UML
+state entry/do bodies are dropped and recorded in a trailing `%% notes:`
+comment — mirroring the importer's subset honesty. `dot` export stays
+flowchart-only and refuses typed layouts with a named error.
+
 `scripts/mermaid_import.py` converts an existing Mermaid diagram into an
 DiagramForge spec: flowchart -> graph, `sequenceDiagram` -> sequence,
 `erDiagram` -> er, `classDiagram` -> class, `stateDiagram` -> state (see the

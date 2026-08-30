@@ -9,7 +9,9 @@ agent/actionable questions about it:
     neighbors  what's connected to node X (blast radius / impact analysis)
     around     extract the N-hop neighborhood of X as a focused graph spec
     diff       added/removed/changed nodes and edges between two specs
-    export     spec -> Mermaid flowchart or Graphviz DOT (diffable, embeddable)
+    export     spec -> Mermaid (flowchart, or native sequenceDiagram /
+               erDiagram / classDiagram / stateDiagram-v2 for typed layouts)
+               or Graphviz DOT (diffable, embeddable)
 
 All commands read specs with the same layout planner the renderer uses, so the
 analyzed graph matches what the interactive HTML shows. stdlib-only.
@@ -443,7 +445,7 @@ def _mermaid_id(raw, used):
     return mid
 
 
-def export_mermaid(spec):
+def _export_mermaid_graph(spec):
     graph = load_spec_graph(spec)
     direction = "TD" if spec.get("direction") == "down" else "LR"
     lines = [f"graph {direction}"]
@@ -468,6 +470,16 @@ def export_mermaid(spec):
     return "\n".join(lines)
 
 
+def export_mermaid(spec):
+    """Dispatch by layout: typed layouts get their native Mermaid syntax
+    (sequenceDiagram / erDiagram / classDiagram / stateDiagram-v2); everything
+    else falls back to the flowchart form."""
+    exporter = MERMAID_LAYOUT_EXPORTERS.get(str(spec.get("layout", "graph")))
+    if exporter is not None:
+        return exporter(spec)
+    return _export_mermaid_graph(spec)
+
+
 def export_dot(spec):
     graph = load_spec_graph(spec)
     rankdir = "TB" if spec.get("direction") == "down" else "LR"
@@ -486,6 +498,194 @@ def export_dot(spec):
         lines.append(f'    "{edge["from"]}" -> "{edge["to"]}"{suffix};')
     lines.append("}")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Mermaid exports for typed layouts (sequence / er / class / state).
+# Same contract as the importers: a notated subset, with what is skipped said
+# plainly in the notes comment — lossless round-trips are not the goal.
+# ---------------------------------------------------------------------------
+
+def _mm_id(value):
+    """Mermaid identifiers must be alphanumeric/underscore."""
+    clean = re.sub(r"[^0-9A-Za-z_]", "_", str(value))
+    if not clean or clean[0].isdigit():
+        clean = f"n_{clean}"
+    return clean
+
+
+def _mm_text(value):
+    """One-line label text: statement separators and newlines flattened."""
+    text = str(value or "").replace("\r", " ").replace("\n", " ").replace(";", ",").replace('"', "'")
+    return text.strip()
+
+
+def export_mermaid_sequence(spec):
+    participants = [p["id"] for p in spec.get("participants", [])]
+    messages = spec.get("messages", [])
+    lines = ["sequenceDiagram"]
+    for p in spec.get("participants", []):
+        label = _mm_text(p.get("label") or p["id"])
+        head = "actor" if p.get("kind") == "actor" else "participant"
+        if label and label != p["id"]:
+            lines.append(f'    {head} {_mm_id(p["id"])} as {label}')
+        else:
+            lines.append(f'    {head} {_mm_id(p["id"])}')
+    notes = []
+
+    fragments = sorted(spec.get("fragments", []), key=lambda f: (f.get("range", [0, 0])[0], -f.get("range", [0, 0])[1]))
+    open_stack = []  # fragments currently open, innermost last
+
+    def close_due(index):
+        while open_stack and open_stack[-1].get("range", [0, 0])[1] < index:
+            open_stack.pop()
+            lines.append("    end")
+
+    for i, msg in enumerate(messages, start=1):
+        close_due(i)
+        for fragment in fragments:
+            if fragment.get("range", [0, 0])[0] == i and fragment not in open_stack:
+                kind = fragment.get("kind", "opt")
+                if kind in ("alt", "opt", "loop", "par", "critical"):
+                    lines.append(f"    {kind} {_mm_text(fragment.get('label', ''))}")
+                    open_stack.append(fragment)
+        for divider in fragment_dividers_at(spec, i):
+            if open_stack:
+                lines.append(f"    else {_mm_text(divider.get('label', ''))}")
+        kind = msg.get("kind", "sync")
+        label = _mm_text(msg.get("label", ""))
+        colon = f": {label}" if label else ""
+        if kind == "note":
+            targets = msg.get("target") or []
+            over = ", ".join(_mm_id(t) for t in targets[:2])
+            lines.append(f"    Note over {over or _mm_id(participants[0])}{colon}")
+        else:
+            src, dst = _mm_id(msg.get("from", "")), _mm_id(msg.get("to", ""))
+            arrow = {"sync": "->>", "async": "-)", "return": "-->>", "self": "->>"}.get(kind, "->>")
+            if kind == "async" and not label:
+                notes.append(f"async message {i} has no label")
+            lines.append(f"    {src} {arrow}{dst}{colon}")
+    close_due(len(messages) + 1)
+    if notes:
+        lines.append("    %% notes: " + "; ".join(notes))
+    return "\n".join(lines)
+
+
+def fragment_dividers_at(spec, index):
+    for fragment in spec.get("fragments", []):
+        for divider in fragment.get("dividers", []):
+            if divider.get("at") == index:
+                yield divider
+
+
+ER_CARDINALITY = {
+    "1:1": "||--||",
+    "1:N": "||--o{",
+    "N:1": "}o--||",
+    "M:N": "}o--o{",
+}
+
+
+def export_mermaid_er(spec):
+    lines = ["erDiagram"]
+    for entity in spec.get("entities", []):
+        eid = _mm_id(entity["id"])
+        attrs = entity.get("attributes", [])
+        if not attrs:
+            lines.append(f"    {eid} {{")
+            lines.append("    }")
+            continue
+        lines.append(f"    {eid} {{")
+        for attr in attrs:
+            key = str(attr.get("key", "")).lower()
+            suffix = {"pk": " PK", "fk": " FK"}.get(key, "")
+            name = _mm_text(attr.get("name", ""))
+            atype = _mm_text(attr.get("type", "")) or "string"
+            lines.append(f"        {atype} {name}{suffix}")
+        lines.append("    }")
+    for rel in spec.get("relations", []):
+        crow = ER_CARDINALITY.get(str(rel.get("cardinality", "1:N")), "||--o{")
+        label = _mm_text(rel.get("label", "")) or "relates"
+        lines.append(f"    {_mm_id(rel['from'])} {crow} {_mm_id(rel['to'])} : {label}")
+    return "\n".join(lines)
+
+
+CLASS_ARROW = {
+    "association": "--",
+    "inheritance": "--|>",
+    "composition": "*--",
+    "aggregation": "o--",
+    "dependency": "..>",
+    "realization": "..|>",
+}
+
+
+def export_mermaid_class(spec):
+    lines = ["classDiagram"]
+    for klass in spec.get("classes", []):
+        cid = _mm_id(klass["id"])
+        attrs = klass.get("attributes", [])
+        methods = klass.get("methods", [])
+        if not attrs and not methods and not klass.get("kind"):
+            lines.append(f"    class {cid}")
+            continue
+        lines.append(f"    class {cid} {{")
+        if klass.get("kind") in ("interface", "enum", "abstract"):
+            lines.append(f"        <<{klass['kind']}>>")
+        for attr in attrs:
+            vis = str(attr.get("visibility", "") or "")
+            atype = _mm_text(attr.get("type", ""))
+            name = _mm_text(attr.get("name", ""))
+            lines.append(f"        {vis}{atype} {name}".rstrip())
+        for method in methods:
+            vis = str(method.get("visibility", "") or "")
+            mtype = _mm_text(method.get("type", ""))
+            name = _mm_text(method.get("name", ""))
+            suffix = f" {mtype}" if mtype else ""
+            lines.append(f"        {vis}{name}{suffix}".rstrip())
+        lines.append("    }")
+    for rel in spec.get("relations", []):
+        arrow = CLASS_ARROW.get(str(rel.get("kind", "association")), "--")
+        parts = [f"    {_mm_id(rel['from'])}"]
+        if rel.get("from_card"):
+            parts.append(f'"{_mm_text(rel["from_card"])}"')
+        parts.append(arrow)
+        if rel.get("to_card"):
+            parts.append(f'"{_mm_text(rel["to_card"])}"')
+        parts.append(_mm_id(rel["to"]))
+        line = " ".join(parts)
+        label = _mm_text(rel.get("label", ""))
+        if label:
+            line += f" : {label}"
+        lines.append(line)
+    return "\n".join(lines)
+
+
+def export_mermaid_state(spec):
+    states = {s["id"]: s for s in spec.get("states", [])}
+    lines = ["stateDiagram-v2"]
+    bodies = [str(s.get("body") or s.get("description") or "") for s in states.values()]
+    bodies = [b for b in bodies if b]
+    for transition in spec.get("transitions", []):
+        src = states.get(transition.get("from"), {})
+        dst = states.get(transition.get("to"), {})
+        a = "[*]" if src.get("kind") == "initial" else _mm_id(transition["from"])
+        b = "[*]" if dst.get("kind") == "final" else _mm_id(transition["to"])
+        label = _mm_text(transition.get("label", ""))
+        lines.append(f"    {a} --> {b}" + (f": {label}" if label else ""))
+    if bodies:
+        # Mermaid has no entry/do action syntax; `state "x" as id` would turn
+        # the action body into a display name, so it is dropped, not mangled.
+        lines.append("    %% notes: state entry/do bodies are not representable in mermaid")
+    return "\n".join(lines)
+
+
+MERMAID_LAYOUT_EXPORTERS = {
+    "sequence": export_mermaid_sequence,
+    "er": export_mermaid_er,
+    "class": export_mermaid_class,
+    "state": export_mermaid_state,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -524,7 +724,7 @@ def main():
     add_spec(p_diff)
     p_diff.add_argument("--other", required=True, help="Path to the other spec JSON.")
 
-    p_export = sub.add_parser("export", help="Export the spec graph as Mermaid or Graphviz DOT.")
+    p_export = sub.add_parser("export", help="Export the spec as Mermaid (graph/sequence/er/class/state) or Graphviz DOT.")
     add_spec(p_export)
     p_export.add_argument("--format", choices=["mermaid", "dot"], default="mermaid")
 
@@ -549,6 +749,11 @@ def main():
         _print_json(diff_specs(spec, _load(args.other)))
         return 0
     if args.command == "export":
+        if args.format == "dot" and str(spec.get("layout", "graph")) in MERMAID_LAYOUT_EXPORTERS:
+            raise SystemExit(
+                f"dot export covers flowchart-family layouts; a '{spec.get('layout')}' spec "
+                f"exports natively via --format mermaid"
+            )
         print(export_mermaid(spec) if args.format == "mermaid" else export_dot(spec))
         return 0
     return 1
