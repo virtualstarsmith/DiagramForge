@@ -193,7 +193,13 @@ Optional spec flags that change output:
 
 Re-rendering an unchanged spec is near-instant: a content hash of the ops document keys an on-disk cache (`<outdir>/.dfcache/`), so unchanged artifacts are reused without launching Chromium.
 
-Visually inspect the PNG for overlap, crossing connectors, cramped labels, weak hierarchy, clipped edges, and empty-space imbalance. Shorten copy or switch layout before reducing text below a readable size.
+**Visual review loop** (never ship the first render blind):
+
+1. Render the PNG draft, then open it and check: overlapping or cramped labels, ambiguous or crossing connectors, unbalanced empty space, clipped edges, and — per `references/design-system.md` — the argument must be visible in the shape grouping alone (no uniform card grid where a fan/chain/tree is meant).
+2. Fix the spec (copy, grouping, layout choice — in that order) and re-render.
+3. Stop after 2 fix rounds: either it is clean, or the concept no longer fits the layout — say so and propose a different layout instead of polishing a dead end.
+
+`--check` gates geometry; this loop gates taste. A render that passes every check but fails the visual review is still a bug.
 
 ### Layout engine (graph / activity)
 
