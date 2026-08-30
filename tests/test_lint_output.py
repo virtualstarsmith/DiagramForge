@@ -85,6 +85,17 @@ class LintTextTest(unittest.TestCase):
         result = self.lint("<style>.a{fill:url(#g)} .b{src:url(data:image/png;base64,AA)}</style>")
         self.assertEqual([], result["violations"])
 
+    def test_js_member_url_calls_are_not_css_urls(self):
+        # URL.createObjectURL / revokeObjectURL are JavaScript APIs, not CSS
+        # resource references — the interactive HTML export toolbar relies on
+        # them for its in-page copy/download buttons.
+        result = self.lint(
+            "<script>const a=document.createElement(\"a\");"
+            "a.href=URL.createObjectURL(blob);"
+            "setTimeout(()=>URL.revokeObjectURL(a.href),5000);</script>"
+        )
+        self.assertEqual([], result["violations"])
+
     def test_executable_attributes_rejected(self):
         for snippet in (
             '<div onclick="f()">',

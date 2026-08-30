@@ -117,6 +117,10 @@ def _scan_css(text, name, violations):
             }
         )
     for match in URL_ANY_RE.finditer(text):
+        # A `url(` glued to an identifier (createObjectURL(, revokeObjectURL()
+        # is a JavaScript member call, not a CSS resource reference.
+        if match.start() > 0 and (text[match.start() - 1].isalnum() or text[match.start() - 1] in "_$"):
+            continue
         url = match.group("url").strip()
         low = url.lower()
         if low.startswith(("#", "data:")):
