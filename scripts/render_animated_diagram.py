@@ -24,6 +24,7 @@ _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)  # pragma: no cover
 
+import drawio_export
 import graph_model
 import lint_geometry
 import theme_loader
@@ -3403,6 +3404,9 @@ def write_outputs(spec, outdir, basename, icon_engine="pillow", formats=("gif", 
         frames[0].save(gif_path, save_all=True, append_images=frames[1:], duration=duration, loop=0, optimize=False)
     if "excalidraw" in want:
         ex.write(excalidraw_path)
+    if "drawio" in want:
+        drawio_path = outdir / f"{basename}.drawio"
+        drawio_export.export_drawio(ops_doc, drawio_path)
     result = {
         "elements": len(ex.elements),
         "canvas": dict(plan["canvas"]),
@@ -3415,6 +3419,8 @@ def write_outputs(spec, outdir, basename, icon_engine="pillow", formats=("gif", 
         result["gif"] = str(gif_path)
     if "excalidraw" in want:
         result["excalidraw"] = str(excalidraw_path)
+    if "drawio" in want:
+        result["drawio"] = str(drawio_path)
     return result
 
 
@@ -3453,6 +3459,10 @@ def write_outputs_browser(spec, outdir, basename, animation="flow", formats=("gi
         excalidraw_path = outdir / f"{basename}.excalidraw"
         ex.write(excalidraw_path)
         result["excalidraw"] = str(excalidraw_path)
+    if "drawio" in formats:
+        drawio_path = outdir / f"{basename}.drawio"
+        drawio_export.export_drawio(doc, drawio_path)
+        result["drawio"] = str(drawio_path)
     if "lottie" in formats and lottie_export is not None:
         lottie_path = outdir / f"{basename}.json"
         try:
@@ -3671,6 +3681,30 @@ def check_outputs(result, spec):
                 {"name": "excalidraw_files_empty", "ok": excalidraw.get("files") == {}},
             ]
         )
+
+    if "drawio" in result:
+        drawio_path = Path(result["drawio"])
+        drawio_ok = drawio_path.is_file() and drawio_path.stat().st_size > 0
+        checks.append({"name": "drawio_exists", "ok": drawio_ok})
+        if drawio_ok:
+            try:
+                drawio_root = ET.parse(drawio_path).getroot()
+                drawio_parsed = drawio_root.tag == "mxfile"
+            except ET.ParseError:
+                drawio_parsed = False
+            cells = list(drawio_root.iter("mxCell")) if drawio_parsed else []
+            ids = [c.get("id") for c in cells if c.get("id")]
+            checks.extend(
+                [
+                    {"name": "drawio_valid_xml", "ok": drawio_parsed},
+                    {"name": "drawio_has_content", "ok": any(c.get("vertex") == "1" or c.get("edge") == "1" for c in cells)},
+                    {"name": "drawio_unique_ids", "ok": len(ids) == len(set(ids))},
+                    {"name": "drawio_page_size", "ok": drawio_parsed and (
+                        int(drawio_root.find(".//mxGraphModel").get("pageWidth", "0")) == expected_width
+                        and int(drawio_root.find(".//mxGraphModel").get("pageHeight", "0")) == expected_height),
+                        "expected": [expected_width, expected_height]},
+                ]
+            )
 
     if "lottie" in result:
         lottie_path = Path(result["lottie"])
@@ -5296,7 +5330,7 @@ def validate_spec(spec, spec_dir=None):
 
 DEFAULT_FORMATS_BROWSER = "gif,mp4,png,excalidraw"
 DEFAULT_FORMATS_PILLOW = "gif,png,excalidraw"
-ALL_FORMATS = {"gif", "mp4", "png", "excalidraw", "svg", "html", "webp", "avif", "pdf", "lottie"}
+ALL_FORMATS = {"gif", "mp4", "png", "excalidraw", "svg", "html", "webp", "avif", "pdf", "lottie", "drawio"}
 BROWSER_ONLY_FORMATS = {"mp4", "svg", "html", "webp", "avif", "pdf", "lottie"}
 
 
@@ -5424,7 +5458,7 @@ def main():
         if unsupported:
             print(f"warning: format(s) {', '.join(unsupported)} require the browser renderer; skipped", file=sys.stderr)
         result = write_outputs(spec, Path(args.outdir), args.basename, icon_engine=args.icon_engine,
-                               formats=tuple(f for f in formats if f in {"gif", "png", "excalidraw"}))
+                               formats=tuple(f for f in formats if f in {"gif", "png", "excalidraw", "drawio"}))
         result["renderer"] = "pillow"
 
     result["style"] = style

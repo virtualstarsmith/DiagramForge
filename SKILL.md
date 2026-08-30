@@ -182,7 +182,7 @@ To inspect geometry directly without rendering artifacts:
 python -X utf8 scripts/lint_geometry.py --spec spec.json
 ```
 
-Available formats: `png`, `gif` (ffmpeg global-palette optimized), `mp4`, `svg` (fonts subsetted to used glyphs, ~95% smaller), `html` (interactive, reduced-motion aware), `excalidraw` (editable), plus `webp`/`avif` (modern raster), `pdf` (vector, embeddable in papers), and `lottie` (vector animation JSON for web/app/AE).
+Available formats: `png`, `gif` (ffmpeg global-palette optimized), `mp4`, `svg` (fonts subsetted to used glyphs, ~95% smaller), `html` (interactive, reduced-motion aware, with a built-in copy-PNG / download-PNG / print toolbar), `excalidraw` (editable, connectors bound to shapes), `drawio` (editable draw.io file, connectors bound to shapes), plus `webp`/`avif` (modern raster), `pdf` (vector, embeddable in papers), and `lottie` (vector animation JSON for web/app/AE).
 
 Optional spec flags that change output:
 
@@ -226,7 +226,7 @@ For a hand-drawn-style short loop, use 1210×1138, 20 FPS, 41 frames, stable cam
 - Show GIF inline when useful.
 - Prefer MP4 for publishing and social platforms.
 - Include PNG for quick viewing.
-- Include `.excalidraw` when editability matters.
+- Include `.excalidraw` and `.drawio` when editability matters (Excalidraw for whiteboarding handoff; draw.io for diagrams.net users).
 - Offer interactive HTML for exploration or presentations.
 - Use SVG for scalable static publication.
 
@@ -248,6 +248,6 @@ Route elsewhere when the request is a better fit for another tool:
 - Strict executable BPMN (simulation tokens, the full BPMN 2.0 symbol library) → Camunda/bpmn.io (DiagramForge's `bpmn` layout covers the core notation subset). Composite/nested state machines and activity partitions → approximate with `state`/`activity` or route to PlantUML (all 14 UML diagram types are native layouts; `.mmd` files import via `scripts/mermaid_import.py`).
 - Large auto-generated cloud inventories (50+ resources) → mingrammer/diagrams or D2; DiagramForge is art-directed, not inventory-scale.
 - Pixel-exact brand templates or org chart tools → a design tool with locked templates.
-- Real-time collaborative whiteboarding → Excalidraw itself (DiagramForge exports `.excalidraw` for exactly that handoff).
+- Real-time collaborative whiteboarding → Excalidraw itself (DiagramForge exports `.excalidraw` for exactly that handoff); draw.io editing → export `drawio` and hand the file back.
 
 After changing this `SKILL.md`, open a new task or refresh the session before testing trigger behavior. Script and asset changes can be tested immediately.

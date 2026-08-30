@@ -752,5 +752,5 @@ full contract in `references/branding.md`.
 - Bodies: preferably two short lines.
 - Keep signatures below about 28 characters.
 - Avoid relying on emergency font shrinking.
-- `--formats` is exact; supported values are `gif`, `mp4`, `png`, `excalidraw`, `svg`, `html`.
+- `--formats` is exact; supported values are `gif`, `mp4`, `png`, `excalidraw`, `svg`, `html`, `webp`, `avif`, `pdf`, `lottie`, `drawio`. `drawio` writes an editable uncompressed mxfile (rebuilt from the op stream, connectors bound to the shapes their endpoints touch, icons skipped as non-portable); `excalidraw` binds arrows to shapes the same way.
 - Use `--check`; then inspect the PNG for overlap, crossing lines, clipping, weak contrast, and mobile readability.
