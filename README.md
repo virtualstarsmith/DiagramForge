@@ -2,7 +2,7 @@
 
 **正式风格的动态架构图，程序生成，张张一致。**
 
-把一段系统描述、流程或参考图变成出版级图表：27 种版式（全部 14 种 UML 图、C4、BPMN、甘特、组织架构、思维导图、时间轴、鱼骨图，外加全景/泳道/自由图/网格目录），四种正式风格（`slate` / `report` / `academic` / `blueprint`）加可定制的品牌主题，输出 PNG / GIF / MP4 / SVG / 交互 HTML（内置复制/下载/打印工具栏）/ 可编辑 Excalidraw 与 draw.io（连线绑定形状，拖动不散）/ Lottie，还能反向导出 GitHub/Notion 原生渲染的 Mermaid（sequence/er/class/state）。
+把一段系统描述、流程或参考图变成出版级图表：27 种版式（全部 14 种 UML 图、C4、BPMN、甘特、组织架构、思维导图、时间轴、鱼骨图，外加全景/泳道/自由图/网格目录），四种正式风格（`slate` / `report` / `academic` / `blueprint`）加可定制的品牌主题，输出 PNG / GIF / MP4 / SVG / 交互 HTML（内置复制/下载/打印工具栏，节点可下钻到嵌入的子图）/ 可编辑 Excalidraw 与 draw.io（连线绑定形状，拖动不散）/ Lottie，还能反向导出 GitHub/Notion 原生渲染的 Mermaid（sequence/er/class/state）。
 
 ![panorama 示例](assets/previews/homepage-panorama.png)
 
@@ -38,6 +38,13 @@ python -X utf8 scripts/spec_graph.py export --spec spec.json --format mermaid   
  "scenarios": [{"name": "failure", "patch": {"nodes": [{"id": "db", "status": "failed"}]}}]}
 ```
 
+交互 HTML 里的节点可下钻到嵌入的子图（一级深度，点击切换、Esc 返回）：
+
+```json
+{"layout": "graph", "...": "...",
+ "nodes": [{"id": "api", "label": "API 网关", "link": "api-detail.json"}]}
+```
+
 官方云图标一键就位（本机下载，不再分发，渲染始终离线）：
 
 ```bash
@@ -69,8 +76,9 @@ python -X utf8 scripts/onboard_brand.py --url https://yoursite.com --slug acme
 - 每次渲染可 `--check`：画布尺寸、帧数、字体嵌入、Excalidraw 契约、SVG 无障碍（`role="img"`、带前缀的 `<title>`/`<desc>`）
 - `scripts/lint_output.py`：交付物安全 lint（禁远程资源、禁 `@import`、禁可执行属性）
 - `scripts/spec_graph.py lint`：结构 lint（成环、单点故障、孤儿节点、连通性）
+- `scripts/lint_notation.py`：记法 lint，typed 版式的 UML 语义（继承成环、状态不可达、sequence 激活不配对、关系端点未声明）——advisory 报告，`--check` 仍是阻塞门禁
 - 导入有资源上限与对抗样本测试；源 label 永远是数据，不是指令
-- 测试套件 750+ 用例，含 32 个示例 spec 的验证与渲染新鲜度门禁
+- 测试套件 900+ 用例，含 34 个示例 spec 的验证与渲染新鲜度门禁
 
 ## 不适用场景
 
@@ -84,3 +92,4 @@ python -X utf8 scripts/onboard_brand.py --url https://yoursite.com --slug acme
 - `references/branding.md` — 品牌定制、onboarding、定制持久性承诺
 - `references/upgrade-notes.md` — 升级与迁移指南
 - `references/vendor-icons.md` — 云/品牌图标解析与一键安装
+- `references/illustrated-icons.md` — 手绘插画图标的艺术方向与 job stories
