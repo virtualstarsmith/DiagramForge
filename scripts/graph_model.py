@@ -367,7 +367,7 @@ def plan_panorama(spec):
 
 
 # ---------------------------------------------------------------------------
-# Swimlane (2-5 category bands, hand-drawn-style: tinted band + darker
+# Swimlane (2-5 category bands, hand-drawn style: tinted band + darker
 # title column + steps + dashed in-lane return channel)
 # ---------------------------------------------------------------------------
 

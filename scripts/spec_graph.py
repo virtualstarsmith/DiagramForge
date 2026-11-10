@@ -2,7 +2,7 @@
 """Structural analysis for DiagramForge specs -- the diagram as a knowledge graph.
 
 Treats any spec (panorama, swimlane, or graph) as a directed graph and answers
-agent/actionable questions about it: 
+agent/actionable questions about it:
 
     lint       cycles, single points of failure, orphans, disconnected parts,
                and node-count guidance -- objective structure quality signals

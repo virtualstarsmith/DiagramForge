@@ -5,7 +5,6 @@ text fitting; this document is the deterministic design layer an author (human
 or agent) applies when choosing layouts, colors, icons, and copy. Read it
 before writing a spec from scratch.
 
-
 ## 1. Semantic color roles
 
 Specs never name raw hex for meaning; they use `accent` / `color` keys that map

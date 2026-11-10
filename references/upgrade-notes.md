@@ -32,7 +32,7 @@ host manifest is kept in sync (`scripts/bump_version.py --check` gates it).
   interactive-HTML drill-down (`node.link` embeds a second spec as a
   one-level-deep sub-view). ELK beyond graph/activity and
   golden-image regression stay deferred (see §7).
-- **2.3** — ecosystem round draw.io editable export (`drawio`
+- **2.3** — ecosystem round: draw.io editable export (`drawio`
   format, connectors bound to shapes), interactive-HTML export toolbar
   (copy/download PNG + print, self-contained), Excalidraw arrow bindings,
   typed-layout Mermaid exports (sequence/er/class/state render natively on
@@ -173,7 +173,8 @@ fall through to a full render automatically.
 
 ## 7. Ecosystem round (2.3) — decision record
 
-above lists what shipped). Deferred, with rationale:
+The 2.3 ecosystem round shipped the features the changelog above lists.
+Deferred, with rationale:
 
 - **Layers (drill-down boards)** — scenario variants shipped first
   because they reuse the existing render loop untouched. Layers need a

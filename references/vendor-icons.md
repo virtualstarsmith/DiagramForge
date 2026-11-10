@@ -1,6 +1,7 @@
 # Vendor Icon Packs
 
 DiagramForge renders cloud/vendor brand icons when you supply them, without
+redistributing anyone's official assets.
 
 ## How resolution works
 

@@ -43,7 +43,7 @@ If no trigger matches, go straight to the layout table.
 | Layout | Use it for | Capacity |
 | --- | --- | --- |
 | `panorama` | complete systems with inputs, core, decisions, and detail panels | 2-6 inputs, 2-4 core cards, 0-3 panels |
-| `swimlane` | category bands / comparison rows cross-role workflows, catalogs | 2-8 lanes with title + subtitle column, up to 8 steps each, in-lane dashed loop channels, per-lane caption rows |
+| `swimlane` | category bands / comparison rows, cross-role workflows, catalogs | 2-8 lanes with title + subtitle column, up to 8 steps each, in-lane dashed loop channels, per-lane caption rows |
 | `graph` | free-form per-project workflows with custom loop topology (retry/replan/recall...) | 2-24 nodes, up to 40 edges, auto DAG layout + loop lanes, 4 dashed group boxes, numbered edge badges; node `kind`: card/decision/terminal/circle/person/database/document |
 | `grid` | mini-flow panel catalogs: "the N types/architectures of X" in 2-3 columns (3+3+2 etc.) | 2-9 cells, up to 6 steps each |
 | `sequence` | UML sequence diagrams: lifelines, activation bars, sync/async/return/self messages, notes, alt/loop/opt fragments | 2-8 participants, 1-30 messages, up to 6 nested fragments |
